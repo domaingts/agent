@@ -21,8 +21,8 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: latest
-          args: release --snapshot
+          version: 2
+          args: release --clean
       - name: Upload compiled binaries as artifacts
         uses: actions/upload-artifact@v4.3.0
         with:

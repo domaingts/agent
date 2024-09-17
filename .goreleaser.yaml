@@ -1,7 +1,7 @@
 project_name: nezha-agent
 
 snapshot:
-  name_template: "{{ .Version }}"
+  version_template: "{{ .Version }}"
 
 builds:
   - id: universal
