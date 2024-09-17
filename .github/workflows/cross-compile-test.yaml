@@ -22,7 +22,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --snapshot --rm-dist
+          args: release --snapshot
       - name: Upload compiled binaries as artifacts
         uses: actions/upload-artifact@v4.3.0
         with:
