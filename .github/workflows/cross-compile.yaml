@@ -41,5 +41,5 @@ jobs:
       - name: upload unix binary
         uses: actions/upload-artifact@v4
         with:
-          name: agent-${{ matrix.name }}
-          path: agent-${{ matrix.name }}.tar.gz
+          name: nezha-agent-${{ matrix.name }}
+          path: nezha-agent-${{ matrix.name }}.tar.gz
