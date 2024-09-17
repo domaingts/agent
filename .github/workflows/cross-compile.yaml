@@ -23,7 +23,6 @@ jobs:
             goamd64: v3
     env:
       PACKAGE_NAME: ${{ matrix.name }}
-      PACKAGE_VERSION: ${{ steps.tag.outputs.tag }}
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOAMD64: ${{ matrix.goamd64 }}
@@ -35,6 +34,8 @@ jobs:
         with:
           strip_v: true
           default: v0.0.0
+      - name: Set environment variables
+        run: echo "PACKAGE_VERSION=${{ steps.tag.outputs.tag }}" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v4
         with:
