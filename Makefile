@@ -1,10 +1,12 @@
 NAME = agent
 
+PACKAGE_NAME ?= linux-amd64
+
 build:
 	go build -v -trimpath -ldflags "-s -w -buildid=" -o agent ./cmd/agent/
 
 pack:
-	tar czvf agent.tar.gz agent
+	tar czvf agent-$(PACKAGE_NAME).tar.gz agent
 
 clean:
-	rm -rf agent.tar.gz agent
+	rm -rf agent-$(PACKAGE_NAME).tar.gz agent

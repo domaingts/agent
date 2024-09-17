@@ -20,11 +20,11 @@ jobs:
             goarch: amd64
             goamd64: v3
     env:
+      PACKAGE_NAME: ${{ matrix.name }}
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOAMD64: ${{ matrix.goamd64 }}
       CGO_ENABLED: 1
-      TAGS: with_gvisor,with_dhcp,with_wireguard,with_reality_server
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,4 +42,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: agent-${{ matrix.name }}
-          path: agent.tar.gz
+          path: agent-${{ matrix.name }}.tar.gz
