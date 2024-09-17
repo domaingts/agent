@@ -23,9 +23,8 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --snapshot --rm-dist
-          workdir: nezha-agent-folder
       - name: Upload compiled binaries as artifacts
         uses: actions/upload-artifact@v4.3.0
         with:
           name: nezha-agent
-          path: nezha-agent-folder/dist/*
+          path: dist/*
