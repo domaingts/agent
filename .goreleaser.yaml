@@ -1,4 +1,8 @@
 project_name: nezha-agent
+
+snapshot:
+  name_template: "{{ .Version }}"
+
 builds:
   - id: universal
     env:
