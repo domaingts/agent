@@ -4,6 +4,8 @@ on:
   release:
     types:
       - published
+    tags:
+      - "*"
 
 jobs:
   build-corss:
@@ -26,6 +28,14 @@ jobs:
       GOAMD64: ${{ matrix.goamd64 }}
       CGO_ENABLED: 1
     steps:
+      - name: Get tag
+        id: tag
+        uses: devops-actions/action-get-tag@v1.0.3
+        with:
+          strip_v: true
+          default: v0.0.0
+      - name: Use tag
+        run: echo ${{ steps.tag.outputs.tag }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
