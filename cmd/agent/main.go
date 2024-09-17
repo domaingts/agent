@@ -139,7 +139,7 @@ func init() {
 	agentCmd.PersistentFlags().BoolVar(&agentCliParam.TLS, "tls", false, "启用SSL/TLS加密")
 	agentCmd.PersistentFlags().BoolVarP(&agentCliParam.InsecureTLS, "insecure", "k", false, "禁用证书检查")
 	agentCmd.PersistentFlags().BoolVarP(&agentConfig.Debug, "debug", "d", false, "开启调试信息")
-	agentCmd.PersistentFlags().IntVar(&agentCliParam.ReportDelay, "report-delay", 3, "系统状态上报间隔")
+	agentCmd.PersistentFlags().IntVar(&agentCliParam.ReportDelay, "report-delay", 2, "系统状态上报间隔")
 	agentCmd.PersistentFlags().BoolVar(&agentCliParam.SkipConnectionCount, "skip-conn", false, "不监控连接数")
 	agentCmd.PersistentFlags().BoolVar(&agentCliParam.SkipProcsCount, "skip-procs", false, "不监控进程数")
 	agentCmd.PersistentFlags().BoolVar(&agentCliParam.DisableCommandExecute, "disable-command-execute", false, "禁止在此机器上执行命令")
