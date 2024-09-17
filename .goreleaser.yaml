@@ -1,0 +1,26 @@
+project_name: nezha-agent
+builds:
+  - id: universal
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.arch={{.Arch}}
+    goos:
+      - linux
+    goarch:
+      - amd64
+    goamd64: 
+      - v3
+      - v2
+    main: ./cmd/agent
+    binary: nezha-agent
+
+checksum:
+  name_template: "checksums.txt"
+
+archives:
+  - name_template: "nezha-agent-{{ .Os }}-{{ .Arch }}-{{ .Amd64 }}"
+    format: tar.gz
+
+changelog:
+  use: git

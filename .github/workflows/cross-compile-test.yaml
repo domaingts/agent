@@ -1,0 +1,31 @@
+name: build
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build-corss:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.23
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --snapshot --rm-dist
+          workdir: nezha-agent-folder
+      - name: Upload compiled binaries as artifacts
+        uses: actions/upload-artifact@v4.3.0
+        with:
+          name: nezha-agent
+          path: nezha-agent-folder/dist/*
