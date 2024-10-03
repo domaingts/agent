@@ -21,10 +21,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: 2
-          args: release --clean --snapshot
-      - name: Upload compiled binaries as artifacts
-        uses: actions/upload-artifact@v4.3.0
-        with:
-          name: nezha-agent
-          path: dist/*
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
