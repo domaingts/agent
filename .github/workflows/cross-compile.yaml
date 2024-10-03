@@ -4,38 +4,11 @@ on:
   release:
     types:
       - published
-    tags:
-      - "*"
 
 jobs:
   build-corss:
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        include:
-          - name: linux-amd64-v2
-            goos: linux
-            goarch: amd64
-            goamd64: v2
-          - name: linux-amd64-v3
-            goos: linux
-            goarch: amd64
-            goamd64: v3
-    env:
-      PACKAGE_NAME: ${{ matrix.name }}
-      GOOS: ${{ matrix.goos }}
-      GOARCH: ${{ matrix.goarch }}
-      GOAMD64: ${{ matrix.goamd64 }}
-      CGO_ENABLED: 1
+    runs-on: ubuntu-latest
     steps:
-      - name: Get tag
-        id: tag
-        uses: devops-actions/action-get-tag@v1.0.3
-        with:
-          strip_v: true
-          default: v0.0.0
-      - name: Set environment variables
-        run: echo "PACKAGE_VERSION=${{ steps.tag.outputs.tag }}" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -44,12 +17,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ^1.23
-      - name: build
-        run: make build
-      - name: pack unix binary
-        run: make pack
-      - name: upload unix binary
-        uses: actions/upload-artifact@v4
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          name: nezha-agent-${{ matrix.name }}
-          path: nezha-agent-${{ matrix.name }}.tar.gz
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

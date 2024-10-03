@@ -1,5 +1,7 @@
 project_name: nezha-agent
 
+version: 2
+
 snapshot:
   version_template: "{{ .Version }}"
 
