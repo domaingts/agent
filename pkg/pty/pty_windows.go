@@ -19,7 +19,10 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 )
 
-var isWin10 bool
+var _ IPty = (*winPTY)(nil)
+var _ IPty = (*conPty)(nil)
+
+var isWin10 = VersionCheck()
 
 type winPTY struct {
 	tty *winpty.WinPTY
@@ -27,10 +30,6 @@ type winPTY struct {
 
 type conPty struct {
 	tty *conpty.ConPty
-}
-
-func init() {
-	isWin10 = VersionCheck()
 }
 
 func VersionCheck() bool {
@@ -168,6 +167,3 @@ func (c *conPty) Close() error {
 	}
 	return nil
 }
-
-var _ IPty = &winPTY{}
-var _ IPty = &conPty{}
