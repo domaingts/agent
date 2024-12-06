@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"crypto/tls"
@@ -35,11 +34,8 @@ import (
 
 	"github.com/nezhahq/agent/cmd/agent/commands"
 	"github.com/nezhahq/agent/model"
-	fm "github.com/nezhahq/agent/pkg/fm"
 	"github.com/nezhahq/agent/pkg/logger"
 	"github.com/nezhahq/agent/pkg/monitor"
-	"github.com/nezhahq/agent/pkg/processgroup"
-	"github.com/nezhahq/agent/pkg/pty"
 	"github.com/nezhahq/agent/pkg/util"
 	utlsx "github.com/nezhahq/agent/pkg/utls"
 	pb "github.com/nezhahq/agent/proto"
@@ -232,14 +228,14 @@ func run() {
 		ClientUUID:   agentConfig.UUID,
 	}
 
-	// 下载远程命令执行需要的终端
-	if !agentConfig.DisableCommandExecute {
-		go func() {
-			if err := pty.DownloadDependency(); err != nil {
-				printf("pty 下载依赖失败: %v", err)
-			}
-		}()
-	}
+	// // 下载远程命令执行需要的终端
+	// if !agentConfig.DisableCommandExecute {
+	// 	go func() {
+	// 		if err := pty.DownloadDependency(); err != nil {
+	// 			printf("pty 下载依赖失败: %v", err)
+	// 		}
+	// 	}()
+	// }
 
 	// 定时检查更新
 	if _, err := semver.Parse(version); err == nil && !agentConfig.DisableAutoUpdate {
@@ -426,13 +422,13 @@ func doTask(task *pb.Task) *pb.TaskResult {
 		handleIcmpPingTask(task, &result)
 	case model.TaskTypeTCPPing:
 		handleTcpPingTask(task, &result)
-	case model.TaskTypeCommand:
-		handleCommandTask(task, &result)
+	// case model.TaskTypeCommand:
+	// 	handleCommandTask(task, &result)
 	case model.TaskTypeUpgrade:
 		handleUpgradeTask(task, &result)
-	case model.TaskTypeTerminalGRPC:
-		handleTerminalTask(task)
-		return nil
+	// case model.TaskTypeTerminalGRPC:
+	// 	handleTerminalTask(task)
+	// 	return nil
 	case model.TaskTypeNAT:
 		handleNATTask(task)
 		return nil
@@ -441,9 +437,9 @@ func doTask(task *pb.Task) *pb.TaskResult {
 		monitor.GeoQueryIPChanged = true
 		reportGeoIP(agentConfig.UseIPv6CountryCode)
 		return nil
-	case model.TaskTypeFM:
-		handleFMTask(task)
-		return nil
+		// case model.TaskTypeFM:
+		// 	handleFMTask(task)
+		// return nil
 	case model.TaskTypeKeepalive:
 	default:
 		printf("不支持的任务: %v", task)
@@ -732,131 +728,131 @@ func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.T
 	checkHttpResp(altAuthorityUrl, start, resp, err, result)
 }
 
-func handleCommandTask(task *pb.Task, result *pb.TaskResult) {
-	if agentConfig.DisableCommandExecute {
-		result.Data = "此 Agent 已禁止命令执行"
-		return
-	}
-	startedAt := time.Now()
-	endCh := make(chan struct{})
-	pg, err := processgroup.NewProcessExitGroup()
-	if err != nil {
-		// 进程组创建失败，直接退出
-		result.Data = err.Error()
-		return
-	}
-	timeout := time.NewTimer(time.Hour * 2)
-	cmd := processgroup.NewCommand(task.GetData())
-	var b bytes.Buffer
-	cmd.Stdout = &b
-	cmd.Env = os.Environ()
-	if err = cmd.Start(); err != nil {
-		result.Data = err.Error()
-		return
-	}
-	pg.AddProcess(cmd)
-	go func() {
-		select {
-		case <-timeout.C:
-			result.Data = "任务执行超时\n"
-			close(endCh)
-			pg.Dispose()
-		case <-endCh:
-			timeout.Stop()
-		}
-	}()
-	if err = cmd.Wait(); err != nil {
-		result.Data += fmt.Sprintf("%s\n%s", b.String(), err.Error())
-	} else {
-		close(endCh)
-		result.Data = b.String()
-		result.Successful = true
-	}
-	pg.Dispose()
-	result.Delay = float32(time.Since(startedAt).Seconds())
-}
+// func handleCommandTask(task *pb.Task, result *pb.TaskResult) {
+// 	if agentConfig.DisableCommandExecute {
+// 		result.Data = "此 Agent 已禁止命令执行"
+// 		return
+// 	}
+// 	startedAt := time.Now()
+// 	endCh := make(chan struct{})
+// 	pg, err := processgroup.NewProcessExitGroup()
+// 	if err != nil {
+// 		// 进程组创建失败，直接退出
+// 		result.Data = err.Error()
+// 		return
+// 	}
+// 	timeout := time.NewTimer(time.Hour * 2)
+// 	cmd := processgroup.NewCommand(task.GetData())
+// 	var b bytes.Buffer
+// 	cmd.Stdout = &b
+// 	cmd.Env = os.Environ()
+// 	if err = cmd.Start(); err != nil {
+// 		result.Data = err.Error()
+// 		return
+// 	}
+// 	pg.AddProcess(cmd)
+// 	go func() {
+// 		select {
+// 		case <-timeout.C:
+// 			result.Data = "任务执行超时\n"
+// 			close(endCh)
+// 			pg.Dispose()
+// 		case <-endCh:
+// 			timeout.Stop()
+// 		}
+// 	}()
+// 	if err = cmd.Wait(); err != nil {
+// 		result.Data += fmt.Sprintf("%s\n%s", b.String(), err.Error())
+// 	} else {
+// 		close(endCh)
+// 		result.Data = b.String()
+// 		result.Successful = true
+// 	}
+// 	pg.Dispose()
+// 	result.Delay = float32(time.Since(startedAt).Seconds())
+// }
 
 type WindowSize struct {
 	Cols uint32
 	Rows uint32
 }
 
-func handleTerminalTask(task *pb.Task) {
-	if agentConfig.DisableCommandExecute {
-		println("此 Agent 已禁止命令执行")
-		return
-	}
-	var terminal model.TerminalTask
-	err := util.Json.Unmarshal([]byte(task.GetData()), &terminal)
-	if err != nil {
-		printf("Terminal 任务解析错误: %v", err)
-		return
-	}
+// func handleTerminalTask(task *pb.Task) {
+// 	if agentConfig.DisableCommandExecute {
+// 		println("此 Agent 已禁止命令执行")
+// 		return
+// 	}
+// 	var terminal model.TerminalTask
+// 	err := util.Json.Unmarshal([]byte(task.GetData()), &terminal)
+// 	if err != nil {
+// 		printf("Terminal 任务解析错误: %v", err)
+// 		return
+// 	}
 
-	remoteIO, err := client.IOStream(context.Background())
-	if err != nil {
-		printf("Terminal IOStream失败: %v", err)
-		return
-	}
+// 	remoteIO, err := client.IOStream(context.Background())
+// 	if err != nil {
+// 		printf("Terminal IOStream失败: %v", err)
+// 		return
+// 	}
 
-	// 发送 StreamID
-	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
-		0xff, 0x05, 0xff, 0x05,
-	}, []byte(terminal.StreamID)...)}); err != nil {
-		printf("Terminal 发送StreamID失败: %v", err)
-		return
-	}
+// 	// 发送 StreamID
+// 	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
+// 		0xff, 0x05, 0xff, 0x05,
+// 	}, []byte(terminal.StreamID)...)}); err != nil {
+// 		printf("Terminal 发送StreamID失败: %v", err)
+// 		return
+// 	}
 
-	go ioStreamKeepAlive(remoteIO)
+// 	go ioStreamKeepAlive(remoteIO)
 
-	tty, err := pty.Start()
-	if err != nil {
-		printf("Terminal pty.Start失败 %v", err)
-		return
-	}
+// 	tty, err := pty.Start()
+// 	if err != nil {
+// 		printf("Terminal pty.Start失败 %v", err)
+// 		return
+// 	}
 
-	defer func() {
-		err := tty.Close()
-		errCloseSend := remoteIO.CloseSend()
-		println("terminal exit", terminal.StreamID, err, errCloseSend)
-	}()
-	println("terminal init", terminal.StreamID)
+// 	defer func() {
+// 		err := tty.Close()
+// 		errCloseSend := remoteIO.CloseSend()
+// 		println("terminal exit", terminal.StreamID, err, errCloseSend)
+// 	}()
+// 	println("terminal init", terminal.StreamID)
 
-	go func() {
-		buf := make([]byte, 10240)
-		for {
-			read, err := tty.Read(buf)
-			if err != nil {
-				remoteIO.Send(&pb.IOStreamData{Data: []byte(err.Error())})
-				remoteIO.CloseSend()
-				return
-			}
-			remoteIO.Send(&pb.IOStreamData{Data: buf[:read]})
-		}
-	}()
+// 	go func() {
+// 		buf := make([]byte, 10240)
+// 		for {
+// 			read, err := tty.Read(buf)
+// 			if err != nil {
+// 				remoteIO.Send(&pb.IOStreamData{Data: []byte(err.Error())})
+// 				remoteIO.CloseSend()
+// 				return
+// 			}
+// 			remoteIO.Send(&pb.IOStreamData{Data: buf[:read]})
+// 		}
+// 	}()
 
-	for {
-		var remoteData *pb.IOStreamData
-		if remoteData, err = remoteIO.Recv(); err != nil {
-			return
-		}
-		if len(remoteData.Data) == 0 {
-			continue
-		}
-		switch remoteData.Data[0] {
-		case 0:
-			tty.Write(remoteData.Data[1:])
-		case 1:
-			decoder := util.Json.NewDecoder(strings.NewReader(string(remoteData.Data[1:])))
-			var resizeMessage WindowSize
-			err := decoder.Decode(&resizeMessage)
-			if err != nil {
-				continue
-			}
-			tty.Setsize(resizeMessage.Cols, resizeMessage.Rows)
-		}
-	}
-}
+// 	for {
+// 		var remoteData *pb.IOStreamData
+// 		if remoteData, err = remoteIO.Recv(); err != nil {
+// 			return
+// 		}
+// 		if len(remoteData.Data) == 0 {
+// 			continue
+// 		}
+// 		switch remoteData.Data[0] {
+// 		case 0:
+// 			tty.Write(remoteData.Data[1:])
+// 		case 1:
+// 			decoder := util.Json.NewDecoder(strings.NewReader(string(remoteData.Data[1:])))
+// 			var resizeMessage WindowSize
+// 			err := decoder.Decode(&resizeMessage)
+// 			if err != nil {
+// 				continue
+// 			}
+// 			tty.Setsize(resizeMessage.Cols, resizeMessage.Rows)
+// 		}
+// 	}
+// }
 
 func handleNATTask(task *pb.Task) {
 	if agentConfig.DisableNat {
@@ -922,52 +918,52 @@ func handleNATTask(task *pb.Task) {
 	}
 }
 
-func handleFMTask(task *pb.Task) {
-	if agentConfig.DisableCommandExecute {
-		println("此 Agent 已禁止命令执行")
-		return
-	}
-	var fmTask model.TaskFM
-	err := util.Json.Unmarshal([]byte(task.GetData()), &fmTask)
-	if err != nil {
-		printf("FM 任务解析错误: %v", err)
-		return
-	}
+// func handleFMTask(task *pb.Task) {
+// 	if agentConfig.DisableCommandExecute {
+// 		println("此 Agent 已禁止命令执行")
+// 		return
+// 	}
+// 	var fmTask model.TaskFM
+// 	err := util.Json.Unmarshal([]byte(task.GetData()), &fmTask)
+// 	if err != nil {
+// 		printf("FM 任务解析错误: %v", err)
+// 		return
+// 	}
 
-	remoteIO, err := client.IOStream(context.Background())
-	if err != nil {
-		printf("FM IOStream失败: %v", err)
-		return
-	}
+// 	remoteIO, err := client.IOStream(context.Background())
+// 	if err != nil {
+// 		printf("FM IOStream失败: %v", err)
+// 		return
+// 	}
 
-	// 发送 StreamID
-	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
-		0xff, 0x05, 0xff, 0x05,
-	}, []byte(fmTask.StreamID)...)}); err != nil {
-		printf("FM 发送StreamID失败: %v", err)
-		return
-	}
+// 	// 发送 StreamID
+// 	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
+// 		0xff, 0x05, 0xff, 0x05,
+// 	}, []byte(fmTask.StreamID)...)}); err != nil {
+// 		printf("FM 发送StreamID失败: %v", err)
+// 		return
+// 	}
 
-	go ioStreamKeepAlive(remoteIO)
+// 	go ioStreamKeepAlive(remoteIO)
 
-	defer func() {
-		errCloseSend := remoteIO.CloseSend()
-		println("FM exit", fmTask.StreamID, nil, errCloseSend)
-	}()
-	println("FM init", fmTask.StreamID)
+// 	defer func() {
+// 		errCloseSend := remoteIO.CloseSend()
+// 		println("FM exit", fmTask.StreamID, nil, errCloseSend)
+// 	}()
+// 	println("FM init", fmTask.StreamID)
 
-	fmc := fm.NewFMClient(remoteIO, printf)
-	for {
-		var remoteData *pb.IOStreamData
-		if remoteData, err = remoteIO.Recv(); err != nil {
-			return
-		}
-		if len(remoteData.Data) == 0 {
-			continue
-		}
-		fmc.DoTask(remoteData)
-	}
-}
+// 	fmc := fm.NewFMClient(remoteIO, printf)
+// 	for {
+// 		var remoteData *pb.IOStreamData
+// 		if remoteData, err = remoteIO.Recv(); err != nil {
+// 			return
+// 		}
+// 		if len(remoteData.Data) == 0 {
+// 			continue
+// 		}
+// 		fmc.DoTask(remoteData)
+// 	}
+// }
 
 func generateQueue(start int, size int) []int {
 	var result []int

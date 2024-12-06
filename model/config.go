@@ -32,7 +32,7 @@ type AgentConfig struct {
 	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`               // 跳过进程数量检查
 	DisableAutoUpdate           bool            `koanf:"disable_auto_update" json:"disable_auto_update"`         // 关闭自动更新
 	DisableForceUpdate          bool            `koanf:"disable_force_update" json:"disable_force_update"`       // 关闭强制更新
-	DisableCommandExecute       bool            `koanf:"disable_command_execute" json:"disable_command_execute"` // 关闭命令执行
+	// DisableCommandExecute       bool            `koanf:"disable_command_execute" json:"disable_command_execute"` // 关闭命令执行
 	ReportDelay                 int             `koanf:"report_delay" json:"report_delay"`                       // 报告间隔
 	TLS                         bool            `koanf:"tls" json:"tls"`                                         // 是否使用TLS加密传输至服务端
 	InsecureTLS                 bool            `koanf:"insecure_tls" json:"insecure_tls"`                       // 是否禁用证书检查

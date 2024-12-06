@@ -1,18 +1,14 @@
 module github.com/nezhahq/agent
 
-go 1.20
+go 1.23.4
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/UserExistsError/conpty v0.1.4
-	github.com/artdarek/go-unzip v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/creack/pty v1.1.24
 	github.com/dean2021/goss v0.0.0-20230129073947-df90431348f1
 	github.com/ebi-yade/altsvc-go v0.1.1
 	github.com/ebitengine/purego v0.8.1
 	github.com/hashicorp/go-uuid v1.0.3
-	github.com/iamacarpet/go-winpty v1.0.4
 	github.com/jaypipes/ghw v0.12.0
 	github.com/json-iterator/go v1.1.12
 	github.com/knadh/koanf/providers/env v1.0.0
@@ -40,6 +36,7 @@ require (
 	github.com/antihax/optional v1.0.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/creack/pty v1.1.24 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
