@@ -426,20 +426,28 @@ func doTask(task *pb.Task) *pb.TaskResult {
 	// 	handleCommandTask(task, &result)
 	case model.TaskTypeUpgrade:
 		handleUpgradeTask(task, &result)
-	// case model.TaskTypeTerminalGRPC:
+	case model.TaskTypeTerminalGRPC:
 	// 	handleTerminalTask(task)
 	// 	return nil
-	case model.TaskTypeNAT:
-		handleNATTask(task)
-		return nil
+	// case model.TaskTypeNAT:
+	// 	handleNATTask(task)
+	// 	return nil
 	case model.TaskTypeReportHostInfo:
 		reportHost()
-		monitor.GeoQueryIPChanged = true
-		reportGeoIP(agentConfig.UseIPv6CountryCode)
+		go func() {
+			monitor.GeoQueryIPChanged = true
+			for {
+				reported := reportGeoIP(agentConfig.UseIPv6CountryCode)
+				if reported {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+		}()
 		return nil
-		// case model.TaskTypeFM:
-		// 	handleFMTask(task)
-		// return nil
+	// case model.TaskTypeFM:
+	// 	handleFMTask(task)
+	// 	return nil
 	case model.TaskTypeKeepalive:
 	default:
 		printf("不支持的任务: %v", task)
@@ -854,69 +862,69 @@ type WindowSize struct {
 // 	}
 // }
 
-func handleNATTask(task *pb.Task) {
-	if agentConfig.DisableNat {
-		println("This server has disabled NAT traversal")
-		return
-	}
+// func handleNATTask(task *pb.Task) {
+// 	if agentConfig.DisableNat {
+// 		println("This server has disabled NAT traversal")
+// 		return
+// 	}
 
-	var nat model.TaskNAT
-	err := util.Json.Unmarshal([]byte(task.GetData()), &nat)
-	if err != nil {
-		printf("NAT 任务解析错误: %v", err)
-		return
-	}
+// 	var nat model.TaskNAT
+// 	err := util.Json.Unmarshal([]byte(task.GetData()), &nat)
+// 	if err != nil {
+// 		printf("NAT 任务解析错误: %v", err)
+// 		return
+// 	}
 
-	remoteIO, err := client.IOStream(context.Background())
-	if err != nil {
-		printf("NAT IOStream失败: %v", err)
-		return
-	}
+// 	remoteIO, err := client.IOStream(context.Background())
+// 	if err != nil {
+// 		printf("NAT IOStream失败: %v", err)
+// 		return
+// 	}
 
-	// 发送 StreamID
-	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
-		0xff, 0x05, 0xff, 0x05,
-	}, []byte(nat.StreamID)...)}); err != nil {
-		printf("NAT 发送StreamID失败: %v", err)
-		return
-	}
+// 	// 发送 StreamID
+// 	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{
+// 		0xff, 0x05, 0xff, 0x05,
+// 	}, []byte(nat.StreamID)...)}); err != nil {
+// 		printf("NAT 发送StreamID失败: %v", err)
+// 		return
+// 	}
 
-	go ioStreamKeepAlive(remoteIO)
+// 	go ioStreamKeepAlive(remoteIO)
 
-	conn, err := net.Dial("tcp", nat.Host)
-	if err != nil {
-		printf("NAT Dial %s 失败：%s", nat.Host, err)
-		return
-	}
+// 	conn, err := net.Dial("tcp", nat.Host)
+// 	if err != nil {
+// 		printf("NAT Dial %s 失败：%s", nat.Host, err)
+// 		return
+// 	}
 
-	defer func() {
-		err := conn.Close()
-		errCloseSend := remoteIO.CloseSend()
-		println("NAT exit", nat.StreamID, err, errCloseSend)
-	}()
-	println("NAT init", nat.StreamID)
+// 	defer func() {
+// 		err := conn.Close()
+// 		errCloseSend := remoteIO.CloseSend()
+// 		println("NAT exit", nat.StreamID, err, errCloseSend)
+// 	}()
+// 	println("NAT init", nat.StreamID)
 
-	go func() {
-		buf := make([]byte, 10240)
-		for {
-			read, err := conn.Read(buf)
-			if err != nil {
-				remoteIO.Send(&pb.IOStreamData{Data: []byte(err.Error())})
-				remoteIO.CloseSend()
-				return
-			}
-			remoteIO.Send(&pb.IOStreamData{Data: buf[:read]})
-		}
-	}()
+// 	go func() {
+// 		buf := make([]byte, 10240)
+// 		for {
+// 			read, err := conn.Read(buf)
+// 			if err != nil {
+// 				remoteIO.Send(&pb.IOStreamData{Data: []byte(err.Error())})
+// 				remoteIO.CloseSend()
+// 				return
+// 			}
+// 			remoteIO.Send(&pb.IOStreamData{Data: buf[:read]})
+// 		}
+// 	}()
 
-	for {
-		var remoteData *pb.IOStreamData
-		if remoteData, err = remoteIO.Recv(); err != nil {
-			return
-		}
-		conn.Write(remoteData.Data)
-	}
-}
+// 	for {
+// 		var remoteData *pb.IOStreamData
+// 		if remoteData, err = remoteIO.Recv(); err != nil {
+// 			return
+// 		}
+// 		conn.Write(remoteData.Data)
+// 	}
+// }
 
 // func handleFMTask(task *pb.Task) {
 // 	if agentConfig.DisableCommandExecute {
