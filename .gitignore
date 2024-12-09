@@ -3,5 +3,4 @@
 /cmd/agent/agent
 *.pprof
 dist
-*agent*
 /test*
