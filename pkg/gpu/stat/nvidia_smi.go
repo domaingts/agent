@@ -1,4 +1,4 @@
-package vendor
+package stat
 
 // Modified from https://github.com/influxdata/telegraf/blob/master/plugins/inputs/nvidia_smi/nvidia_smi.go
 // Original License: MIT
@@ -14,15 +14,12 @@ import (
 
 type NvidiaSMI struct {
 	BinPath string
-	data    []byte
 }
 
-func (smi *NvidiaSMI) GatherModel() ([]string, error) {
-	return smi.gatherModel()
-}
+func (smi *NvidiaSMI) Gather() ([]float64, error) {
+	data := smi.pollNvidiaSMI()
 
-func (smi *NvidiaSMI) GatherUsage() ([]float64, error) {
-	return smi.gatherUsage()
+	return smi.parse(data)
 }
 
 func (smi *NvidiaSMI) Start() error {
@@ -33,7 +30,6 @@ func (smi *NvidiaSMI) Start() error {
 		}
 		smi.BinPath = binPath
 	}
-	smi.data = smi.pollNvidiaSMI()
 	return nil
 }
 
@@ -49,27 +45,11 @@ func (smi *NvidiaSMI) pollNvidiaSMI() []byte {
 	return gs
 }
 
-func (smi *NvidiaSMI) gatherModel() ([]string, error) {
-	var s smistat
-	var models []string
-
-	err := xml.Unmarshal(smi.data, &s)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, gpu := range s.GPUs {
-		models = append(models, gpu.ProductName)
-	}
-
-	return models, nil
-}
-
-func (smi *NvidiaSMI) gatherUsage() ([]float64, error) {
+func (smi *NvidiaSMI) parse(data []byte) ([]float64, error) {
 	var s smistat
 	var percentage []float64
 
-	err := xml.Unmarshal(smi.data, &s)
+	err := xml.Unmarshal(data, &s)
 	if err != nil {
 		return nil, err
 	}
@@ -95,12 +75,11 @@ func parsePercentage(p string) (float64, error) {
 	return value, nil
 }
 
-type gpu struct {
-	ProductName string `xml:"product_name"`
+type nGPU struct {
 	Utilization struct {
 		GpuUtil string `xml:"gpu_util"`
 	} `xml:"utilization"`
 }
 type smistat struct {
-	GPUs []gpu `xml:"gpu"`
+	GPUs []nGPU `xml:"gpu"`
 }

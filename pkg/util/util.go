@@ -1,22 +1,37 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/nezhahq/service"
 )
 
 const MacOSChromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 var (
-	Json = jsoniter.ConfigCompatibleWithStandardLibrary
+	Json                  = jsoniter.ConfigCompatibleWithStandardLibrary
+	Logger service.Logger = service.ConsoleLogger
 )
 
 func IsWindows() bool {
 	return os.PathSeparator == '\\' && os.PathListSeparator == ';'
+}
+
+func Println(enabled bool, v ...interface{}) {
+	if enabled {
+		Logger.Infof("NEZHA@%s>> %v", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprint(v...))
+	}
+}
+
+func Printf(enabled bool, format string, v ...interface{}) {
+	if enabled {
+		Logger.Infof("NEZHA@%s>> "+format, append([]interface{}{time.Now().Format("2006-01-02 15:04:05")}, v...)...)
+	}
 }
 
 func BrowserHeaders() http.Header {
@@ -48,35 +63,4 @@ func RemoveDuplicate[T comparable](sliceList []T) []T {
 		}
 	}
 	return list
-}
-
-// OnceValue returns a function that invokes f only once and returns the value
-// returned by f. The returned function may be called concurrently.
-//
-// If f panics, the returned function will panic with the same value on every call.
-func OnceValue[T any](f func() T) func() T {
-	var (
-		once   sync.Once
-		valid  bool
-		p      any
-		result T
-	)
-	g := func() {
-		defer func() {
-			p = recover()
-			if !valid {
-				panic(p)
-			}
-		}()
-		result = f()
-		f = nil
-		valid = true
-	}
-	return func() T {
-		once.Do(g)
-		if !valid {
-			panic(p)
-		}
-		return result
-	}
 }

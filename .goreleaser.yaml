@@ -18,6 +18,7 @@ builds:
     goamd64: 
       - v3
       - v2
+      - v1
     main: ./cmd/agent
     binary: nezha-agent
 
