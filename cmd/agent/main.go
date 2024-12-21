@@ -80,6 +80,9 @@ const (
 	delayWhenError = time.Second * 10 // Agent 重连间隔
 	networkTimeOut = time.Second * 5  // 普通网络超时
 
+	minUpdateInterval = 30
+	maxUpdateInterval = 90
+
 	binaryName = "nezha-agent"
 )
 
@@ -95,11 +98,10 @@ func setEnv() {
 			dnsServers = agentConfig.DNS
 		}
 		index := int(time.Now().Unix()) % int(len(dnsServers))
-		queue := generateQueue(index, len(dnsServers))
 		var conn net.Conn
 		var err error
-		for i := 0; i < len(queue); i++ {
-			conn, err = d.DialContext(ctx, "udp", dnsServers[queue[i]])
+		for i := 0; i < len(dnsServers); i++ {
+			conn, err = d.DialContext(ctx, "udp", dnsServers[util.RotateQueue1(index, i, len(dnsServers))])
 			if err == nil {
 				return conn, nil
 			}
@@ -231,7 +233,7 @@ func run() {
 		ClientUUID:   agentConfig.UUID,
 	}
 
-	// // 下载远程命令执行需要的终端
+	// 下载远程命令执行需要的终端
 	// if !agentConfig.DisableCommandExecute {
 	// 	go func() {
 	// 		if err := pty.DownloadDependency(); err != nil {
@@ -240,11 +242,17 @@ func run() {
 	// 	}()
 	// }
 
-	// 定时检查更新
+	// // 定时检查更新
 	// if _, err := semver.Parse(version); err == nil && !agentConfig.DisableAutoUpdate {
 	// 	doSelfUpdate(true)
 	// 	go func() {
-	// 		for range time.Tick(20 * time.Minute) {
+	// 		var interval time.Duration
+	// 		if agentConfig.SelfUpdatePeriod > 0 {
+	// 			interval = time.Duration(agentConfig.SelfUpdatePeriod) * time.Minute
+	// 		} else {
+	// 			interval = time.Duration(rand.Intn(maxUpdateInterval-minUpdateInterval)+minUpdateInterval) * time.Minute
+	// 		}
+	// 		for range time.Tick(interval) {
 	// 			doSelfUpdate(true)
 	// 		}
 	// 	}()
@@ -968,18 +976,6 @@ type WindowSize struct {
 // 		fmc.DoTask(remoteData)
 // 	}
 // }
-
-func generateQueue(start int, size int) []int {
-	var result []int
-	for i := start; i < start+size; i++ {
-		if i < size {
-			result = append(result, i)
-		} else {
-			result = append(result, i-size)
-		}
-	}
-	return result
-}
 
 func lookupIP(hostOrIp string) (string, error) {
 	if net.ParseIP(hostOrIp) == nil {
