@@ -80,10 +80,10 @@ const (
 	delayWhenError = time.Second * 10 // Agent 重连间隔
 	networkTimeOut = time.Second * 5  // 普通网络超时
 
-	minUpdateInterval = 30
-	maxUpdateInterval = 90
+	// minUpdateInterval = 30
+	// maxUpdateInterval = 90
 
-	binaryName = "nezha-agent"
+	// binaryName = "nezha-agent"
 )
 
 func setEnv() {
@@ -233,7 +233,7 @@ func run() {
 		ClientUUID:   agentConfig.UUID,
 	}
 
-	// 下载远程命令执行需要的终端
+	// // 下载远程命令执行需要的终端
 	// if !agentConfig.DisableCommandExecute {
 	// 	go func() {
 	// 		if err := pty.DownloadDependency(); err != nil {
@@ -991,12 +991,12 @@ func lookupIP(hostOrIp string) (string, error) {
 	return hostOrIp, nil
 }
 
-func ioStreamKeepAlive(stream pb.NezhaService_IOStreamClient) {
-	for {
-		if err := stream.Send(&pb.IOStreamData{Data: []byte{}}); err != nil {
-			printf("IOStream KeepAlive 失败: %v", err)
-			return
-		}
-		time.Sleep(time.Second * 30)
-	}
-}
+// func ioStreamKeepAlive(stream pb.NezhaService_IOStreamClient) {
+// 	for {
+// 		if err := stream.Send(&pb.IOStreamData{Data: []byte{}}); err != nil {
+// 			printf("IOStream KeepAlive 失败: %v", err)
+// 			return
+// 		}
+// 		time.Sleep(time.Second * 30)
+// 	}
+// }

@@ -19,7 +19,9 @@ var sensorIgnoreList = []string{
 func GetState(_ context.Context) ([]model.SensorTemperature, error) {
 	temperatures, err := sensors.SensorsTemperatures()
 	if err != nil {
-		return nil, fmt.Errorf("SensorsTemperatures: %v", err)
+		if _, ok := err.(*sensors.Warnings); !ok {
+			return nil, fmt.Errorf("SensorsTemperatures: %v", err)
+		}
 	}
 
 	var tempStat []model.SensorTemperature
