@@ -15,7 +15,6 @@ import (
 	"github.com/nezhahq/agent/pkg/monitor/conn"
 	"github.com/nezhahq/agent/pkg/monitor/cpu"
 	"github.com/nezhahq/agent/pkg/monitor/disk"
-	"github.com/nezhahq/agent/pkg/monitor/gpu"
 	"github.com/nezhahq/agent/pkg/monitor/load"
 	"github.com/nezhahq/agent/pkg/monitor/nic"
 	"github.com/nezhahq/agent/pkg/monitor/temperature"
@@ -92,10 +91,6 @@ func GetHost() *model.Host {
 	ctxCpu := context.WithValue(context.Background(), cpu.CPUHostKey, cpuType)
 	ret.CPU = tryHost(ctxCpu, CPU, cpu.GetHost)
 
-	if agentConfig.GPU {
-		ret.GPU = tryHost(context.Background(), GPU, gpu.GetHost)
-	}
-
 	ret.DiskTotal = getDiskTotal()
 
 	mv, err := mem.VirtualMemory()
@@ -171,10 +166,6 @@ func GetState(skipConnectionCount bool, skipProcsCount bool) *model.HostState {
 	if agentConfig.Temperature {
 		go updateTemperatureStat()
 		ret.Temperatures = temperatureStat
-	}
-
-	if agentConfig.GPU {
-		ret.GPU = tryStat(context.Background(), GPU, gpu.GetState)
 	}
 
 	ret.NetInTransfer, ret.NetOutTransfer = netInTransfer, netOutTransfer

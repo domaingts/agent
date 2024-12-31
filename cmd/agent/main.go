@@ -4,24 +4,17 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/tls"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync/atomic"
 	"time"
 
-	"github.com/ebi-yade/altsvc-go"
 	"github.com/nezhahq/service"
-	ping "github.com/prometheus-community/pro-bing"
-	"github.com/quic-go/quic-go/http3"
 	utls "github.com/refraction-networking/utls"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/urfave/cli/v2"
@@ -62,13 +55,13 @@ var (
 		},
 		Timeout: time.Second * 30,
 	}
-	httpClient3 = &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Timeout:   time.Second * 30,
-		Transport: &http3.RoundTripper{},
-	}
+	// httpClient3 = &http.Client{
+	// 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	// 		return http.ErrUseLastResponse
+	// 	},
+	// 	Timeout:   time.Second * 30,
+	// 	Transport: &http3.RoundTripper{},
+	// }
 )
 
 var (
@@ -430,12 +423,12 @@ func doTask(task *pb.Task) *pb.TaskResult {
 	result.Id = task.GetId()
 	result.Type = task.GetType()
 	switch task.GetType() {
-	case model.TaskTypeHTTPGet:
-		handleHttpGetTask(task, &result)
-	case model.TaskTypeICMPPing:
-		handleIcmpPingTask(task, &result)
-	case model.TaskTypeTCPPing:
-		handleTcpPingTask(task, &result)
+	// case model.TaskTypeHTTPGet:
+	// 	handleHttpGetTask(task, &result)
+	// case model.TaskTypeICMPPing:
+	// 	handleIcmpPingTask(task, &result)
+	// case model.TaskTypeTCPPing:
+	// 	handleTcpPingTask(task, &result)
 	// case model.TaskTypeCommand:
 	// 	handleCommandTask(task, &result)
 	// case model.TaskTypeUpgrade:
@@ -583,162 +576,162 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 	doSelfUpdate(false)
 // }
 
-func handleTcpPingTask(task *pb.Task, result *pb.TaskResult) {
-	if agentConfig.DisableSendQuery {
-		result.Data = "This server has disabled query sending"
-		return
-	}
+// func handleTcpPingTask(task *pb.Task, result *pb.TaskResult) {
+// 	if agentConfig.DisableSendQuery {
+// 		result.Data = "This server has disabled query sending"
+// 		return
+// 	}
 
-	host, port, err := net.SplitHostPort(task.GetData())
-	if err != nil {
-		result.Data = err.Error()
-		return
-	}
-	ipAddr, err := lookupIP(host)
-	if err != nil {
-		result.Data = err.Error()
-		return
-	}
-	if strings.IndexByte(ipAddr, ':') != -1 {
-		ipAddr = fmt.Sprintf("[%s]", ipAddr)
-	}
-	printf("TCP-Ping Task: Pinging %s:%s", ipAddr, port)
-	start := time.Now()
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", ipAddr, port), time.Second*10)
-	if err != nil {
-		result.Data = err.Error()
-	} else {
-		conn.Close()
-		result.Delay = float32(time.Since(start).Microseconds()) / 1000.0
-		result.Successful = true
-	}
-}
+// 	host, port, err := net.SplitHostPort(task.GetData())
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 		return
+// 	}
+// 	ipAddr, err := lookupIP(host)
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 		return
+// 	}
+// 	if strings.IndexByte(ipAddr, ':') != -1 {
+// 		ipAddr = fmt.Sprintf("[%s]", ipAddr)
+// 	}
+// 	printf("TCP-Ping Task: Pinging %s:%s", ipAddr, port)
+// 	start := time.Now()
+// 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", ipAddr, port), time.Second*10)
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 	} else {
+// 		conn.Close()
+// 		result.Delay = float32(time.Since(start).Microseconds()) / 1000.0
+// 		result.Successful = true
+// 	}
+// }
 
-func handleIcmpPingTask(task *pb.Task, result *pb.TaskResult) {
-	if agentConfig.DisableSendQuery {
-		result.Data = "This server has disabled query sending"
-		return
-	}
+// func handleIcmpPingTask(task *pb.Task, result *pb.TaskResult) {
+// 	if agentConfig.DisableSendQuery {
+// 		result.Data = "This server has disabled query sending"
+// 		return
+// 	}
 
-	ipAddr, err := lookupIP(task.GetData())
-	printf("ICMP-Ping Task: Pinging %s(%s)", task.GetData(), ipAddr)
-	if err != nil {
-		result.Data = err.Error()
-		return
-	}
-	pinger, err := ping.NewPinger(ipAddr)
-	if err == nil {
-		pinger.SetPrivileged(true)
-		pinger.Count = 5
-		pinger.Timeout = time.Second * 20
-		err = pinger.Run() // Blocks until finished.
-	}
-	if err == nil {
-		stat := pinger.Statistics()
-		if stat.PacketsRecv == 0 {
-			result.Data = "pockets recv 0"
-			return
-		}
-		result.Delay = float32(stat.AvgRtt.Microseconds()) / 1000.0
-		result.Successful = true
-	} else {
-		result.Data = err.Error()
-	}
-}
+// 	ipAddr, err := lookupIP(task.GetData())
+// 	printf("ICMP-Ping Task: Pinging %s(%s)", task.GetData(), ipAddr)
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 		return
+// 	}
+// 	pinger, err := ping.NewPinger(ipAddr)
+// 	if err == nil {
+// 		pinger.SetPrivileged(true)
+// 		pinger.Count = 5
+// 		pinger.Timeout = time.Second * 20
+// 		err = pinger.Run() // Blocks until finished.
+// 	}
+// 	if err == nil {
+// 		stat := pinger.Statistics()
+// 		if stat.PacketsRecv == 0 {
+// 			result.Data = "pockets recv 0"
+// 			return
+// 		}
+// 		result.Delay = float32(stat.AvgRtt.Microseconds()) / 1000.0
+// 		result.Successful = true
+// 	} else {
+// 		result.Data = err.Error()
+// 	}
+// }
 
-func handleHttpGetTask(task *pb.Task, result *pb.TaskResult) {
-	if agentConfig.DisableSendQuery {
-		result.Data = "This server has disabled query sending"
-		return
-	}
-	start := time.Now()
-	taskUrl := task.GetData()
-	resp, err := httpClient.Get(taskUrl)
-	printf("HTTP-GET Task: %s", taskUrl)
-	checkHttpResp(taskUrl, start, resp, err, result)
-}
+// func handleHttpGetTask(task *pb.Task, result *pb.TaskResult) {
+// 	if agentConfig.DisableSendQuery {
+// 		result.Data = "This server has disabled query sending"
+// 		return
+// 	}
+// 	start := time.Now()
+// 	taskUrl := task.GetData()
+// 	resp, err := httpClient.Get(taskUrl)
+// 	printf("HTTP-GET Task: %s", taskUrl)
+// 	checkHttpResp(taskUrl, start, resp, err, result)
+// }
 
-func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err error, result *pb.TaskResult) {
-	if err == nil {
-		defer resp.Body.Close()
-		_, err = io.Copy(io.Discard, resp.Body)
-	}
-	if err == nil {
-		// 检查 HTTP Response 状态
-		result.Delay = float32(time.Since(start).Microseconds()) / 1000.0
-		if resp.StatusCode > 399 || resp.StatusCode < 200 {
-			err = errors.New("\n应用错误：" + resp.Status)
-		}
-	}
-	if err == nil {
-		// 检查 SSL 证书信息
-		if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
-			c := resp.TLS.PeerCertificates[0]
-			result.Data = c.Issuer.CommonName + "|" + c.NotAfter.String()
-		}
-		altSvc := resp.Header.Get("Alt-Svc")
-		if altSvc != "" {
-			checkAltSvc(start, altSvc, taskUrl, result)
-		} else {
-			result.Successful = true
-		}
-	} else {
-		// HTTP 请求失败
-		result.Data = err.Error()
-	}
-}
+// func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err error, result *pb.TaskResult) {
+// 	if err == nil {
+// 		defer resp.Body.Close()
+// 		_, err = io.Copy(io.Discard, resp.Body)
+// 	}
+// 	if err == nil {
+// 		// 检查 HTTP Response 状态
+// 		result.Delay = float32(time.Since(start).Microseconds()) / 1000.0
+// 		if resp.StatusCode > 399 || resp.StatusCode < 200 {
+// 			err = errors.New("\n应用错误：" + resp.Status)
+// 		}
+// 	}
+// 	if err == nil {
+// 		// 检查 SSL 证书信息
+// 		if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
+// 			c := resp.TLS.PeerCertificates[0]
+// 			result.Data = c.Issuer.CommonName + "|" + c.NotAfter.String()
+// 		}
+// 		altSvc := resp.Header.Get("Alt-Svc")
+// 		if altSvc != "" {
+// 			checkAltSvc(start, altSvc, taskUrl, result)
+// 		} else {
+// 			result.Successful = true
+// 		}
+// 	} else {
+// 		// HTTP 请求失败
+// 		result.Data = err.Error()
+// 	}
+// }
 
-func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.TaskResult) {
-	altSvcList, err := altsvc.Parse(altSvcStr)
-	if err != nil {
-		result.Data = err.Error()
-		result.Successful = false
-		return
-	}
+// func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.TaskResult) {
+// 	altSvcList, err := altsvc.Parse(altSvcStr)
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 		result.Successful = false
+// 		return
+// 	}
 
-	parsedUrl, _ := url.Parse(taskUrl)
-	originalHost := parsedUrl.Hostname()
-	originalPort := parsedUrl.Port()
-	if originalPort == "" {
-		switch parsedUrl.Scheme {
-		case "http":
-			originalPort = "80"
-		case "https":
-			originalPort = "443"
-		}
-	}
+// 	parsedUrl, _ := url.Parse(taskUrl)
+// 	originalHost := parsedUrl.Hostname()
+// 	originalPort := parsedUrl.Port()
+// 	if originalPort == "" {
+// 		switch parsedUrl.Scheme {
+// 		case "http":
+// 			originalPort = "80"
+// 		case "https":
+// 			originalPort = "443"
+// 		}
+// 	}
 
-	altAuthorityHost := ""
-	altAuthorityPort := ""
-	altAuthorityProtocol := ""
-	for _, altSvc := range altSvcList {
-		altAuthorityPort = altSvc.AltAuthority.Port
-		if altSvc.AltAuthority.Host != "" {
-			altAuthorityHost = altSvc.AltAuthority.Host
-			altAuthorityProtocol = altSvc.ProtocolID
-			break
-		}
-	}
-	if altAuthorityHost == "" {
-		altAuthorityHost = originalHost
-	}
-	if altAuthorityHost == originalHost && altAuthorityPort == originalPort {
-		result.Successful = true
-		return
-	}
+// 	altAuthorityHost := ""
+// 	altAuthorityPort := ""
+// 	altAuthorityProtocol := ""
+// 	for _, altSvc := range altSvcList {
+// 		altAuthorityPort = altSvc.AltAuthority.Port
+// 		if altSvc.AltAuthority.Host != "" {
+// 			altAuthorityHost = altSvc.AltAuthority.Host
+// 			altAuthorityProtocol = altSvc.ProtocolID
+// 			break
+// 		}
+// 	}
+// 	if altAuthorityHost == "" {
+// 		altAuthorityHost = originalHost
+// 	}
+// 	if altAuthorityHost == originalHost && altAuthorityPort == originalPort {
+// 		result.Successful = true
+// 		return
+// 	}
 
-	altAuthorityUrl := "https://" + altAuthorityHost + ":" + altAuthorityPort + "/"
-	req, _ := http.NewRequest("GET", altAuthorityUrl, nil)
-	req.Host = originalHost
+// 	altAuthorityUrl := "https://" + altAuthorityHost + ":" + altAuthorityPort + "/"
+// 	req, _ := http.NewRequest("GET", altAuthorityUrl, nil)
+// 	req.Host = originalHost
 
-	client := httpClient
-	if strings.HasPrefix(altAuthorityProtocol, "h3") {
-		client = httpClient3
-	}
-	resp, err := client.Do(req)
+// 	client := httpClient
+// 	if strings.HasPrefix(altAuthorityProtocol, "h3") {
+// 		client = httpClient3
+// 	}
+// 	resp, err := client.Do(req)
 
-	checkHttpResp(altAuthorityUrl, start, resp, err, result)
-}
+// 	checkHttpResp(altAuthorityUrl, start, resp, err, result)
+// }
 
 // func handleCommandTask(task *pb.Task, result *pb.TaskResult) {
 // 	if agentConfig.DisableCommandExecute {

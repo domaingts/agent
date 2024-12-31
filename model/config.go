@@ -26,7 +26,7 @@ type AgentConfig struct {
 	HardDrivePartitionAllowlist []string        `koanf:"hard_drive_partition_allowlist" json:"hard_drive_partition_allowlist,omitempty"`
 	NICAllowlist                map[string]bool `koanf:"nic_allowlist" json:"nic_allowlist,omitempty"`
 	DNS                         []string        `koanf:"dns" json:"dns,omitempty"`
-	GPU                         bool            `koanf:"gpu" json:"gpu"`                                     // 是否检查GPU
+	// GPU                         bool            `koanf:"gpu" json:"gpu"`                                     // 是否检查GPU
 	Temperature                 bool            `koanf:"temperature" json:"temperature"`                     // 是否检查温度
 	SkipConnectionCount         bool            `koanf:"skip_connection_count" json:"skip_connection_count"` // 跳过连接数检查
 	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`           // 跳过进程数量检查
@@ -39,7 +39,7 @@ type AgentConfig struct {
 	UseIPv6CountryCode bool `koanf:"use_ipv6_country_code" json:"use_ipv6_country_code"` // 默认优先展示IPv6旗帜
 	// UseGiteeToUpgrade           bool            `koanf:"use_gitee_to_upgrade" json:"use_gitee_to_upgrade"`       // 强制从Gitee获取更新
 	// DisableNat                  bool            `koanf:"disable_nat" json:"disable_nat"`                         // 关闭内网穿透
-	DisableSendQuery bool   `koanf:"disable_send_query" json:"disable_send_query"` // 关闭发送TCP/ICMP/HTTP请求
+	// DisableSendQuery bool   `koanf:"disable_send_query" json:"disable_send_query"` // 关闭发送TCP/ICMP/HTTP请求
 	IPReportPeriod   uint32 `koanf:"ip_report_period" json:"ip_report_period"`     // IP上报周期
 	// SelfUpdatePeriod            uint32          `koanf:"self_update_period" json:"self_update_period"`           // 自动更新周期
 	CustomIPApi []string `koanf:"custom_ip_api" json:"custom_ip_api,omitempty"` // 自定义 IP API

@@ -141,7 +141,7 @@ func EditAgentConfig(configPath string, agentConfig *model.AgentConfig) {
 		agentConfig.DNS = []string{}
 	}
 
-	agentConfig.GPU = answers.GPU
+	// agentConfig.GPU = answers.GPU
 	agentConfig.Temperature = answers.Temperature
 	agentConfig.Debug = answers.Debug
 	agentConfig.UUID = answers.UUID
