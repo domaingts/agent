@@ -13,7 +13,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/nezhahq/service v0.0.0-20241205090409-40f63a48da4e
 	github.com/refraction-networking/utls v1.6.3
-	github.com/shirou/gopsutil/v4 v4.24.11
+	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/net v0.32.0
 	golang.org/x/sys v0.28.0
