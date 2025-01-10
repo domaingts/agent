@@ -60,7 +60,7 @@ var statDataFetchAttempts = map[uint8]uint8{
 }
 
 var (
-	updateTempStatus = new(atomic.Bool)
+	updateTempStatus atomic.Bool
 	stateLock        sync.Mutex
 )
 
@@ -266,7 +266,7 @@ func tryStat[T any](ctx context.Context, typ uint8, f hostStateFunc[T]) T {
 
 	stateLock.Lock()
 	defer stateLock.Unlock()
-	
+
 	if statDataFetchAttempts[typ] < maxDeviceDataFetchAttempts {
 		v, err := f(ctx)
 		if err != nil {

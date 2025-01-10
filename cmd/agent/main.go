@@ -45,8 +45,8 @@ var (
 	lastReportHostInfo    time.Time
 	lastReportIPInfo      time.Time
 
-	hostStatus = new(atomic.Bool)
-	ipStatus   = new(atomic.Bool)
+	hostStatus atomic.Bool
+	ipStatus   atomic.Bool
 
 	dnsResolver = &net.Resolver{PreferGo: true}
 	httpClient  = &http.Client{

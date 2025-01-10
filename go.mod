@@ -11,7 +11,7 @@ require (
 	github.com/knadh/koanf/providers/env v1.0.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/v2 v2.1.2
-	github.com/nezhahq/service v0.0.0-20250103144207-3c1f9e01d8ae
+	github.com/nezhahq/service v0.0.0-20250109133041-8d6fcf8e7646
 	github.com/refraction-networking/utls v1.6.3
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/urfave/cli/v2 v2.27.5

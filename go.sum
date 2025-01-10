@@ -81,8 +81,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/nezhahq/service v0.0.0-20250103144207-3c1f9e01d8ae h1:gON17FtQEpBsQlqCXe7Vjw0FGP6E+YjRFgEeOW5zlYc=
-github.com/nezhahq/service v0.0.0-20250103144207-3c1f9e01d8ae/go.mod h1:f8o3QyjAvHirebUklhFLKM4QC4wG8T5+abObRjNmQoY=
+github.com/nezhahq/service v0.0.0-20250109133041-8d6fcf8e7646 h1:qgAOzF3Rql/UXLMQkEIg+HHYjhiCYaDsoX1u05blOUI=
+github.com/nezhahq/service v0.0.0-20250109133041-8d6fcf8e7646/go.mod h1:f8o3QyjAvHirebUklhFLKM4QC4wG8T5+abObRjNmQoY=
 github.com/nezhahq/xsyslog v1.0.0 h1:fSSDxaMy7eEWdTB5L2yp47GOctOM/gItfPsF1freZBc=
 github.com/nezhahq/xsyslog v1.0.0/go.mod h1:wRJ6n/bly5i71/ZWhnoA39v0rFvr3Q1PSlIlExbX3fk=
 github.com/onsi/ginkgo/v2 v2.9.5 h1:+6Hr4uxzP4XIUyAkg61dWBw8lb/gc4/X5luuxN/EC+Q=
