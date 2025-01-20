@@ -1,20 +1,31 @@
 package main
 
 import (
+	// "bytes"
 	"context"
 	"crypto/md5"
 	"crypto/tls"
+	// "errors"
 	"fmt"
+	// "io"
 	"log"
+	// "math/rand"
 	"net"
 	"net/http"
+	// "net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	// "strings"
 	"sync/atomic"
 	"time"
 
+	// "github.com/blang/semver"
+	// "github.com/ebi-yade/altsvc-go"
+	// "github.com/nezhahq/go-github-selfupdate/selfupdate"
 	"github.com/nezhahq/service"
+	// ping "github.com/prometheus-community/pro-bing"
+	// "github.com/quic-go/quic-go/http3"
 	utls "github.com/refraction-networking/utls"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/urfave/cli/v2"
@@ -25,8 +36,11 @@ import (
 
 	"github.com/nezhahq/agent/cmd/agent/commands"
 	"github.com/nezhahq/agent/model"
+	// fm "github.com/nezhahq/agent/pkg/fm"
 	"github.com/nezhahq/agent/pkg/logger"
 	"github.com/nezhahq/agent/pkg/monitor"
+	// "github.com/nezhahq/agent/pkg/processgroup"
+	// "github.com/nezhahq/agent/pkg/pty"
 	"github.com/nezhahq/agent/pkg/util"
 	utlsx "github.com/nezhahq/agent/pkg/utls"
 	pb "github.com/nezhahq/agent/proto"
@@ -73,10 +87,10 @@ const (
 	delayWhenError = time.Second * 10 // Agent 重连间隔
 	networkTimeOut = time.Second * 5  // 普通网络超时
 
-	// minUpdateInterval = 30
-	// maxUpdateInterval = 90
+	minUpdateInterval = 30
+	maxUpdateInterval = 90
 
-	// binaryName = "nezha-agent"
+	binaryName = "nezha-agent"
 )
 
 func setEnv() {
@@ -513,7 +527,7 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 	}
 	defer ipStatus.Store(false)
 
-	if client == nil || initialized {
+	if client == nil || !initialized {
 		return false
 	}
 
@@ -527,7 +541,7 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 	}
 
 	geoip, err := client.ReportGeoIP(context.Background(), pbg)
-	if err == nil {
+	if err != nil {
 		return false
 	}
 
@@ -571,6 +585,7 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 	}
 // 	if !latest.Version.Equals(v) {
 // 		printf("已经更新至: %v, 正在结束进程", latest.Version)
+// 		util.KillProcessByCmd(executablePath)
 // 		os.Exit(1)
 // 	}
 // }
@@ -814,13 +829,16 @@ type WindowSize struct {
 // 		return
 // 	}
 
-// 	go ioStreamKeepAlive(remoteIO)
-
 // 	tty, err := pty.Start()
 // 	if err != nil {
 // 		printf("Terminal pty.Start失败 %v", err)
 // 		return
 // 	}
+
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	go ioStreamKeepAlive(ctx, remoteIO)
 
 // 	defer func() {
 // 		err := tty.Close()
@@ -892,13 +910,16 @@ type WindowSize struct {
 // 		return
 // 	}
 
-// 	go ioStreamKeepAlive(remoteIO)
-
 // 	conn, err := net.Dial("tcp", nat.Host)
 // 	if err != nil {
 // 		printf("NAT Dial %s 失败：%s", nat.Host, err)
 // 		return
 // 	}
+
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	go ioStreamKeepAlive(ctx, remoteIO)
 
 // 	defer func() {
 // 		err := conn.Close()
@@ -955,7 +976,10 @@ type WindowSize struct {
 // 		return
 // 	}
 
-// 	go ioStreamKeepAlive(remoteIO)
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	go ioStreamKeepAlive(ctx, remoteIO)
 
 // 	defer func() {
 // 		errCloseSend := remoteIO.CloseSend()
@@ -990,12 +1014,21 @@ func lookupIP(hostOrIp string) (string, error) {
 	return hostOrIp, nil
 }
 
-// func ioStreamKeepAlive(stream pb.NezhaService_IOStreamClient) {
+// func ioStreamKeepAlive(ctx context.Context, stream pb.NezhaService_IOStreamClient) {
+// 	// Can be replaced with time.Tick after upgrading to Go 1.23+
+// 	ticker := time.NewTicker(30 * time.Second)
+// 	defer ticker.Stop()
+
 // 	for {
-// 		if err := stream.Send(&pb.IOStreamData{Data: []byte{}}); err != nil {
-// 			printf("IOStream KeepAlive 失败: %v", err)
+// 		select {
+// 		case <-ctx.Done():
+// 			log.Printf("IOStream KeepAlive stopped: %v", ctx.Err())
 // 			return
+// 		case <-ticker.C:
+// 			if err := stream.Send(&pb.IOStreamData{Data: []byte{}}); err != nil {
+// 				log.Printf("IOStream KeepAlive failed: %v", err)
+// 				return
+// 			}
 // 		}
-// 		time.Sleep(time.Second * 30)
 // 	}
 // }
