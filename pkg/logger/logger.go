@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	DefaultLogger = &ServiceLogger{enabled: true, logger: service.ConsoleLogger}
+	defaultLogger = &ServiceLogger{enabled: true, logger: service.ConsoleLogger}
 
 	loggerOnce sync.Once
 )
@@ -21,9 +21,25 @@ type ServiceLogger struct {
 
 func InitDefaultLogger(enabled bool, logger service.Logger) {
 	loggerOnce.Do(func() {
-		DefaultLogger.enabled = enabled
-		DefaultLogger.logger = logger
+		defaultLogger.enabled = enabled
+		defaultLogger.logger = logger
 	})
+}
+
+func SetEnable(enable bool) {
+	defaultLogger.SetEnable(enable)
+}
+
+func Println(v ...any) {
+	defaultLogger.Println(v...)
+}
+
+func Printf(format string, v ...any) {
+	defaultLogger.Printf(format, v...)
+}
+
+func Error(v ...any) error {
+	return defaultLogger.Error(v...)
 }
 
 func NewServiceLogger(enable bool, logger service.Logger) *ServiceLogger {
@@ -31,6 +47,10 @@ func NewServiceLogger(enable bool, logger service.Logger) *ServiceLogger {
 		enabled: enable,
 		logger:  logger,
 	}
+}
+
+func (s *ServiceLogger) SetEnable(enable bool) {
+	s.enabled = enable
 }
 
 func (s *ServiceLogger) Println(v ...interface{}) {

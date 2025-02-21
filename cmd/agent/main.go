@@ -59,8 +59,9 @@ var (
 	lastReportHostInfo    time.Time
 	lastReportIPInfo      time.Time
 
-	hostStatus atomic.Bool
-	ipStatus   atomic.Bool
+	hostStatus   atomic.Bool
+	ipStatus     atomic.Bool
+	reloadStatus atomic.Bool
 
 	dnsResolver = &net.Resolver{PreferGo: true}
 	httpClient  = &http.Client{
@@ -76,11 +77,13 @@ var (
 	// 	Timeout:   time.Second * 30,
 	// 	Transport: &http3.RoundTripper{},
 	// }
+
+	reloadSigChan = make(chan struct{})
 )
 
 var (
-	println = logger.DefaultLogger.Println
-	printf  = logger.DefaultLogger.Printf
+	println = logger.Println
+	printf  = logger.Printf
 )
 
 const (
@@ -271,7 +274,6 @@ func run() {
 
 	retry := func() {
 		initialized = false
-		println("Error to close connection ...")
 		if conn != nil {
 			conn.Close()
 		}
@@ -313,8 +315,9 @@ func run() {
 
 		errCh := make(chan error)
 
+		wsCtx, wCancel := context.WithCancel(context.Background())
 		// 执行 Task
-		tasks, err := client.RequestTask(context.Background())
+		tasks, err := client.RequestTask(wsCtx)
 		if err != nil {
 			printf("请求任务失败: %v", err)
 			retry()
@@ -322,7 +325,7 @@ func run() {
 		}
 		go receiveTasksDaemon(tasks, errCh)
 
-		reportState, err := client.ReportSystemState(context.Background())
+		reportState, err := client.ReportSystemState(wsCtx)
 		if err != nil {
 			printf("上报状态信息失败: %v", err)
 			retry()
@@ -330,14 +333,22 @@ func run() {
 		}
 		go reportStateDaemon(reportState, errCh)
 
-		for i := 0; i < 2; i++ {
-			err = <-errCh
-			if i == 0 {
-				tasks.CloseSend()
-				reportState.CloseSend()
+		for i := 0; i < 2; {
+			select {
+			case <-reloadSigChan:
+				println("Reloading...")
+			case err := <-errCh:
+				if i == 0 {
+					tasks.CloseSend()
+					reportState.CloseSend()
+					println("Error to close connection ...")
+				}
+				i++
+				printf("worker exit to main: %v", err)
 			}
-			printf("worker exit to main: %v", err)
 		}
+
+		wCancel()
 		close(errCh)
 
 		retry()
@@ -403,7 +414,7 @@ func runService(action string, path string) {
 
 	err = s.Run()
 	if err != nil {
-		logger.DefaultLogger.Error(err)
+		logger.Error(err)
 	}
 }
 
