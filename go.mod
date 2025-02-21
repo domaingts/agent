@@ -1,6 +1,6 @@
 module github.com/nezhahq/agent
 
-go 1.23.5
+go 1.24.0
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -13,7 +13,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/nezhahq/service v0.0.0-20250122132143-5f38afb105e9
 	github.com/refraction-networking/utls v1.6.3
-	github.com/shirou/gopsutil/v4 v4.24.12
+	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/net v0.32.0
 	golang.org/x/sys v0.29.0

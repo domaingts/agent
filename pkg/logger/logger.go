@@ -30,16 +30,20 @@ func SetEnable(enable bool) {
 	defaultLogger.SetEnable(enable)
 }
 
-func Println(v ...any) {
+func Println(v ...interface{}) {
 	defaultLogger.Println(v...)
 }
 
-func Printf(format string, v ...any) {
+func Printf(format string, v ...interface{}) {
 	defaultLogger.Printf(format, v...)
 }
 
-func Error(v ...any) error {
+func Error(v ...interface{}) error {
 	return defaultLogger.Error(v...)
+}
+
+func Errorf(format string, v ...interface{}) error {
+	return defaultLogger.Errorf(format, v...)
 }
 
 func NewServiceLogger(enable bool, logger service.Logger) *ServiceLogger {

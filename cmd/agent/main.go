@@ -28,6 +28,7 @@ import (
 	// "github.com/quic-go/quic-go/http3"
 	utls "github.com/refraction-networking/utls"
 	"github.com/shirou/gopsutil/v4/host"
+	// "github.com/tidwall/gjson"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -315,9 +316,9 @@ func run() {
 
 		errCh := make(chan error)
 
-		wsCtx, wCancel := context.WithCancel(context.Background())
+		wCtx, wCancel := context.WithCancel(context.Background())
 		// 执行 Task
-		tasks, err := client.RequestTask(wsCtx)
+		tasks, err := client.RequestTask(wCtx)
 		if err != nil {
 			printf("请求任务失败: %v", err)
 			retry()
@@ -325,7 +326,7 @@ func run() {
 		}
 		go receiveTasksDaemon(tasks, errCh)
 
-		reportState, err := client.ReportSystemState(wsCtx)
+		reportState, err := client.ReportSystemState(wCtx)
 		if err != nil {
 			printf("上报状态信息失败: %v", err)
 			retry()
@@ -333,10 +334,13 @@ func run() {
 		}
 		go reportStateDaemon(reportState, errCh)
 
+		var canceled bool
 		for i := 0; i < 2; {
 			select {
 			case <-reloadSigChan:
 				println("Reloading...")
+				wCancel()
+				canceled = true
 			case err := <-errCh:
 				if i == 0 {
 					tasks.CloseSend()
@@ -348,7 +352,9 @@ func run() {
 			}
 		}
 
-		wCancel()
+		if !canceled {
+			wCancel()
+		}
 		close(errCh)
 
 		retry()
@@ -467,6 +473,10 @@ func doTask(task *pb.Task) *pb.TaskResult {
 	// case model.TaskTypeFM:
 	// 	handleFMTask(task)
 	// 	return nil
+	// case model.TaskTypeReportConfig:
+	// 	handleReportConfigTask(&result)
+	// case model.TaskTypeApplyConfig:
+	// 	handleApplyConfigTask(task)
 	case model.TaskTypeKeepalive:
 	default:
 		printf("不支持的任务: %v", task)
@@ -520,15 +530,14 @@ func reportHost() bool {
 		return false
 	}
 	defer hostStatus.Store(false)
-
 	if client != nil && initialized {
 		receipt, err := client.ReportSystemInfo2(context.Background(), monitor.GetHost().PB())
-		if err == nil {
-			geoipReported = receipt.GetData() == prevDashboardBootTime
-			prevDashboardBootTime = receipt.GetData()
+		if err != nil {
+			printf("ReportSystemInfo2 error: %v", err)
+			return false
 		}
+		geoipReported = geoipReported && prevDashboardBootTime > 0 && receipt.GetData() == prevDashboardBootTime
 	}
-
 	return true
 }
 
@@ -555,6 +564,8 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 	if err != nil {
 		return false
 	}
+
+	prevDashboardBootTime = geoip.GetDashboardBootTime()
 
 	monitor.CachedCountryCode = geoip.GetCountryCode()
 	monitor.GeoQueryIPChanged = false
@@ -809,6 +820,71 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 	result.Delay = float32(time.Since(startedAt).Seconds())
 // }
 
+// func handleReportConfigTask(result *pb.TaskResult) {
+// 	if agentConfig.DisableCommandExecute {
+// 		result.Data = "此 Agent 已禁止命令执行"
+// 		return
+// 	}
+
+// 	if reloadStatus.Load() {
+// 		result.Data = "another reload is in process"
+// 		return
+// 	}
+
+// 	println("Executing Report Config Task")
+
+// 	c, err := util.Json.Marshal(agentConfig)
+// 	if err != nil {
+// 		result.Data = err.Error()
+// 		return
+// 	}
+
+// 	result.Data = string(c)
+// 	result.Successful = true
+// }
+
+// func handleApplyConfigTask(task *pb.Task) {
+// 	if agentConfig.DisableCommandExecute {
+// 		return
+// 	}
+
+// 	if !reloadStatus.CompareAndSwap(false, true) {
+// 		return
+// 	}
+
+// 	println("Executing Apply Config Task")
+
+// 	var tmpConfig model.AgentConfig
+// 	if err := util.Json.Unmarshal([]byte(task.GetData()), &tmpConfig); err != nil {
+// 		printf("Validate Config failed: %v", err)
+// 		reloadStatus.Store(false)
+// 		return
+// 	}
+// 	obj := gjson.Parse(task.GetData())
+
+// 	if err := model.ValidateConfig(&tmpConfig, true); err != nil {
+// 		printf("Validate Config failed: %v", err)
+// 		reloadStatus.Store(false)
+// 		return
+// 	}
+
+// 	println("Will reload workers in 10 seconds")
+// 	time.AfterFunc(10*time.Second, func() {
+// 		println("Applying new configuration...")
+// 		obj.ForEach(func(k, _ gjson.Result) bool {
+// 			agentConfig.Apply(k.String(), &tmpConfig)
+// 			return true
+// 		})
+// 		agentConfig.Save()
+// 		geoipReported = false
+// 		logger.SetEnable(agentConfig.Debug)
+// 		monitor.InitConfig(&agentConfig)
+// 		monitor.CustomEndpoints = agentConfig.CustomIPApi
+// 		reloadStatus.Store(false)
+// 		reloadSigChan <- struct{}{}
+// 	})
+// }
+
 type WindowSize struct {
 	Cols uint32
 	Rows uint32
@@ -1033,11 +1109,11 @@ func lookupIP(hostOrIp string) (string, error) {
 // 	for {
 // 		select {
 // 		case <-ctx.Done():
-// 			log.Printf("IOStream KeepAlive stopped: %v", ctx.Err())
+// 			printf("IOStream KeepAlive stopped: %v", ctx.Err())
 // 			return
 // 		case <-ticker.C:
 // 			if err := stream.Send(&pb.IOStreamData{Data: []byte{}}); err != nil {
-// 				log.Printf("IOStream KeepAlive failed: %v", err)
+// 				printf("IOStream KeepAlive failed: %v", err)
 // 				return
 // 			}
 // 		}
