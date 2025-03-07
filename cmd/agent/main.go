@@ -300,6 +300,7 @@ func run() {
 			continue
 		}
 		client = pb.NewNezhaServiceClient(conn)
+		printf("Connection to %s established", agentConfig.Server)
 
 		timeOutCtx, cancel := context.WithTimeout(context.Background(), networkTimeOut)
 		dashboardBootTimeReceipt, err = client.ReportSystemInfo2(timeOutCtx, monitor.GetHost().PB())
@@ -514,6 +515,7 @@ func reportState(statClient pb.NezhaService_ReportSystemStateClient, host, ip ti
 		if reportHost() {
 			host = time.Now()
 		}
+		printf("Host reported")
 	}
 	// 更新IP信息
 	if time.Since(ip) > time.Second*time.Duration(agentConfig.IPReportPeriod) || !geoipReported {
@@ -635,12 +637,10 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 		result.Data = err.Error()
 // 		return
 // 	}
-// 	if strings.IndexByte(ipAddr, ':') != -1 {
-// 		ipAddr = fmt.Sprintf("[%s]", ipAddr)
-// 	}
-// 	printf("TCP-Ping Task: Pinging %s:%s", ipAddr, port)
+// 	addr := net.JoinHostPort(ipAddr, port)
+// 	printf("TCP-Ping Task: Pinging %s", addr)
 // 	start := time.Now()
-// 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", ipAddr, port), time.Second*10)
+// 	conn, err := net.DialTimeout("tcp", addr, time.Second*10)
 // 	if err != nil {
 // 		result.Data = err.Error()
 // 	} else {
@@ -703,7 +703,7 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 		// 检查 HTTP Response 状态
 // 		result.Delay = float32(time.Since(start).Microseconds()) / 1000.0
 // 		if resp.StatusCode > 399 || resp.StatusCode < 200 {
-// 			err = errors.New("\n应用错误：" + resp.Status)
+// 			err = errors.New("\n应用错误: " + resp.Status)
 // 		}
 // 	}
 // 	if err == nil {
@@ -885,10 +885,10 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 // 	})
 // }
 
-type WindowSize struct {
-	Cols uint32
-	Rows uint32
-}
+// type WindowSize struct {
+// 	Cols uint32
+// 	Rows uint32
+// }
 
 // func handleTerminalTask(task *pb.Task) {
 // 	if agentConfig.DisableCommandExecute {
@@ -1087,19 +1087,19 @@ type WindowSize struct {
 // 	}
 // }
 
-func lookupIP(hostOrIp string) (string, error) {
-	if net.ParseIP(hostOrIp) == nil {
-		ips, err := dnsResolver.LookupIPAddr(context.Background(), hostOrIp)
-		if err != nil {
-			return "", err
-		}
-		if len(ips) == 0 {
-			return "", fmt.Errorf("无法解析 %s", hostOrIp)
-		}
-		return ips[0].IP.String(), nil
-	}
-	return hostOrIp, nil
-}
+// func lookupIP(hostOrIp string) (string, error) {
+// 	if net.ParseIP(hostOrIp) == nil {
+// 		ips, err := dnsResolver.LookupIPAddr(context.Background(), hostOrIp)
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		if len(ips) == 0 {
+// 			return "", fmt.Errorf("无法解析 %s", hostOrIp)
+// 		}
+// 		return ips[0].IP.String(), nil
+// 	}
+// 	return hostOrIp, nil
+// }
 
 // func ioStreamKeepAlive(ctx context.Context, stream pb.NezhaService_IOStreamClient) {
 // 	// Can be replaced with time.Tick after upgrading to Go 1.23+

@@ -36,7 +36,7 @@ func FetchIP(useIPv6CountryCode bool) *pb.GeoIP {
 	logger.Println("正在更新本地缓存IP信息")
 
 	if retryTimes > 2 && time.Now().Before(latestRetryAt.Add(latestRetryAt.Sub(failedStartedAt)*time.Duration(2))) {
-		logger.Println("IP地址获取失败次数过多, fallback到agent连接IP")
+		logger.Println("IP地址获取失败次数过多，fallback到agent连接IP")
 		return &pb.GeoIP{
 			Use6: false,
 			Ip: &pb.IP{

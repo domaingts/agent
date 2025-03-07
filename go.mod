@@ -1,6 +1,6 @@
 module github.com/nezhahq/agent
 
-go 1.24.0
+go 1.24.1
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -13,10 +13,10 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/nezhahq/service v0.0.0-20250122132143-5f38afb105e9
 	github.com/refraction-networking/utls v1.6.3
-	github.com/shirou/gopsutil/v4 v4.25.1
+	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/urfave/cli/v2 v2.27.5
-	golang.org/x/net v0.32.0
-	golang.org/x/sys v0.29.0
+	golang.org/x/net v0.35.0
+	golang.org/x/sys v0.30.0
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 	sigs.k8s.io/yaml v1.4.0
@@ -55,8 +55,8 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	golang.org/x/crypto v0.30.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 )
