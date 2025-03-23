@@ -6,10 +6,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -104,23 +107,33 @@ func LookupIP(host string) ([]net.IP, error) {
 	return ips, nil
 }
 
-func KillProcessByCmd(cmd string) error {
+func FindProcessByCmd(cmd string) []*process.Process {
 	procs, err := process.Processes()
 	if err != nil {
-		return err
+		return nil
 	}
 
-	var perr error
+	var agentProcs []*process.Process
 	for _, proc := range procs {
-		pcmd, _ := proc.CmdlineSlice()
-		if len(pcmd) > 0 && pcmd[0] == cmd && proc.Pid != int32(os.Getpid()) {
-			if children, err := proc.Children(); err == nil {
-				for _, child := range children {
-					perr = errors.Join(perr, killChildProcess(child))
-				}
-			}
-			perr = errors.Join(perr, proc.Kill())
+		pcmd, _ := proc.Exe()
+		if pcmd == cmd && proc.Pid != int32(os.Getpid()) {
+			agentProcs = append(agentProcs, proc)
 		}
+	}
+
+	return agentProcs
+}
+
+func KillProcesses(procs []*process.Process) error {
+	var perr error
+
+	for _, proc := range procs {
+		if children, err := proc.Children(); err == nil {
+			for _, child := range children {
+				perr = errors.Join(perr, killChildProcess(child))
+			}
+		}
+		perr = errors.Join(perr, proc.Kill())
 	}
 
 	return perr
@@ -136,4 +149,25 @@ func SubUintChecked[T Unsigned](a, b T) T {
 
 type Unsigned interface {
 	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+func IsBelow10() bool {
+	hi, err := host.Info()
+	if err != nil {
+		return true
+	}
+
+	re := regexp.MustCompile(`Build (\d+(\.\d+)?)`)
+	match := re.FindStringSubmatch(hi.KernelVersion)
+	if len(match) > 1 {
+		versionStr := match[1]
+
+		version, err := strconv.ParseFloat(versionStr, 64)
+		if err != nil {
+			return true
+		}
+
+		return version < 17763
+	}
+	return true
 }
