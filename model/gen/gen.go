@@ -179,9 +179,15 @@ func Print(stmt *ast.SwitchStmt) (io.Reader, error) {
 				List: []*ast.Field{
 					{
 						Names: []*ast.Ident{
-							ast.NewIdent("field"),
+							ast.NewIdent("seq"),
 						},
-						Type: ast.NewIdent("string"),
+						Type: &ast.IndexExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent("iter"),
+								Sel: ast.NewIdent("Seq"),
+							},
+							Index: ast.NewIdent("string"),
+						},
 					},
 					{
 						Names: []*ast.Ident{
@@ -204,7 +210,16 @@ func Print(stmt *ast.SwitchStmt) (io.Reader, error) {
 		},
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
-				stmt,
+				&ast.RangeStmt{
+					Key: ast.NewIdent("field"),
+					X:   ast.NewIdent("seq"),
+					Tok: token.DEFINE,
+					Body: &ast.BlockStmt{
+						List: []ast.Stmt{
+							stmt,
+						},
+					},
+				},
 				&ast.ReturnStmt{
 					Results: []ast.Expr{
 						ast.NewIdent("nil"),
@@ -224,6 +239,12 @@ func Print(stmt *ast.SwitchStmt) (io.Reader, error) {
 						Path: &ast.BasicLit{
 							Kind:  token.STRING,
 							Value: `"errors"`,
+						},
+					},
+					&ast.ImportSpec{
+						Path: &ast.BasicLit{
+							Kind:  token.STRING,
+							Value: `"iter"`,
 						},
 					},
 				},
