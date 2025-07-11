@@ -6,15 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/go-uuid"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"sigs.k8s.io/yaml"
-
-	// "github.com/nezhahq/agent/pkg/logger"
-	"github.com/nezhahq/agent/pkg/util"
 )
 
 //go:generate go run gen/gen.go -type=AgentConfig
@@ -54,7 +52,7 @@ type AgentConfig struct {
 func (c *AgentConfig) Read(path string) error {
 	c.k = koanf.New("")
 	c.filePath = path
-	saveOnce := util.OnceValue(c.Save)
+	saveOnce := sync.OnceValue(c.Save)
 
 	if _, err := os.Stat(path); err == nil {
 		err = c.k.Load(file.Provider(path), new(kubeyaml))
@@ -76,15 +74,6 @@ func (c *AgentConfig) Read(path string) error {
 	if err != nil {
 		return err
 	}
-
-	// if !c.DisableAutoUpdate || !c.DisableForceUpdate {
-	// 	if util.IsBelow10() {
-	// 		c.DisableAutoUpdate = true
-	// 		c.DisableForceUpdate = true
-	// 		logger.Println("This version of Windows is no longer supported, disabling self-update now")
-	// 		defer saveOnce()
-	// 	}
-	// }
 
 	if c.UUID == "" {
 		if uuid, err := uuid.GenerateUUID(); err == nil {
