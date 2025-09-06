@@ -16,7 +16,6 @@ import (
 	"github.com/nezhahq/agent/pkg/monitor/conn"
 	"github.com/nezhahq/agent/pkg/monitor/cpu"
 	"github.com/nezhahq/agent/pkg/monitor/disk"
-	// "github.com/nezhahq/agent/pkg/monitor/gpu"
 	"github.com/nezhahq/agent/pkg/monitor/load"
 	"github.com/nezhahq/agent/pkg/monitor/nic"
 	"github.com/nezhahq/agent/pkg/monitor/temperature"
