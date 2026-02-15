@@ -14,9 +14,6 @@ func TestJsonUnmarshalConfig(t *testing.T) {
 		t.Errorf("json unmarshal failed: %v", err)
 	}
 	t.Logf("new conf: %+v", conf)
-	// if conf.GPU != true {
-	// 	t.Errorf("json unmarshal failed: %v", conf.GPU)
-	// }
 	if conf.Debug != true {
 		t.Errorf("json unmarshal failed: %v", conf.Debug)
 	}

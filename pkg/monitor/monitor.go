@@ -94,10 +94,6 @@ func GetHost() *model.Host {
 	ctxCpu := context.WithValue(context.Background(), cpu.CPUHostKey, cpuType)
 	ret.CPU = tryHost(ctxCpu, CPU, cpu.GetHost)
 
-	// if agentConfig.GPU {
-	// 	ret.GPU = tryHost(context.Background(), GPU, gpu.GetHost)
-	// }
-
 	ret.DiskTotal = getDiskTotal()
 
 	mv, err := mem.VirtualMemory()
@@ -172,10 +168,6 @@ func GetState(skipConnectionCount bool, skipProcsCount bool) *model.HostState {
 		go updateTemperatureStat()
 		ret.Temperatures = temperatureStat
 	}
-
-	// if agentConfig.GPU {
-	// 	ret.GPU = tryStat(context.Background(), GPU, gpu.GetState)
-	// }
 
 	ret.NetInTransfer, ret.NetOutTransfer = netInTransfer, netOutTransfer
 	ret.NetInSpeed, ret.NetOutSpeed = netInSpeed, netOutSpeed
