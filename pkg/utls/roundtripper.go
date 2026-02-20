@@ -80,7 +80,7 @@ func (r *uTLSHTTPRoundTripperImpl) RoundTrip(req *http.Request) (*http.Response,
 	if req.URL.Scheme != "https" {
 		return r.backdropTransport.RoundTrip(req)
 	}
-	for retryCount := 0; retryCount < 5; retryCount++ {
+	for range 5 {
 		effectivePort := req.URL.Port()
 		if effectivePort == "" {
 			effectivePort = "443"

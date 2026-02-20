@@ -90,7 +90,7 @@ func (h *Host) PB() *pb.Host {
 }
 
 type GeoIP struct {
-	IP          IP     `json:"ip,omitempty"`
+	IP          IP     `json:"ip"`
 	CountryCode string `json:"country_code,omitempty"`
 }
 

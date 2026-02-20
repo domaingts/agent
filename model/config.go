@@ -26,15 +26,15 @@ type AgentConfig struct {
 	HardDrivePartitionAllowlist []string        `koanf:"hard_drive_partition_allowlist" json:"hard_drive_partition_allowlist,omitempty"`
 	NICAllowlist                map[string]bool `koanf:"nic_allowlist" json:"nic_allowlist,omitempty"`
 	DNS                         []string        `koanf:"dns" json:"dns,omitempty"`
-	Temperature                 bool            `koanf:"temperature" json:"temperature"`                         // 是否检查温度
-	SkipConnectionCount         bool            `koanf:"skip_connection_count" json:"skip_connection_count"`     // 跳过连接数检查
-	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`               // 跳过进程数量检查
-	ReportDelay                 uint32          `koanf:"report_delay" json:"report_delay"`                       // 报告间隔
-	TLS                         bool            `koanf:"tls" json:"tls"`                                         // 是否使用TLS加密传输至服务端
-	InsecureTLS                 bool            `koanf:"insecure_tls" json:"insecure_tls"`                       // 是否禁用证书检查
-	UseIPv6CountryCode          bool            `koanf:"use_ipv6_country_code" json:"use_ipv6_country_code"`     // 默认优先展示IPv6旗帜
-	IPReportPeriod              uint32          `koanf:"ip_report_period" json:"ip_report_period"`               // IP上报周期
-	CustomIPApi                 []string        `koanf:"custom_ip_api" json:"custom_ip_api,omitempty"`           // 自定义 IP API                      // 重载间隔
+	Temperature                 bool            `koanf:"temperature" json:"temperature"`                     // 是否检查温度
+	SkipConnectionCount         bool            `koanf:"skip_connection_count" json:"skip_connection_count"` // 跳过连接数检查
+	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`           // 跳过进程数量检查
+	ReportDelay                 uint32          `koanf:"report_delay" json:"report_delay"`                   // 报告间隔
+	TLS                         bool            `koanf:"tls" json:"tls"`                                     // 是否使用TLS加密传输至服务端
+	InsecureTLS                 bool            `koanf:"insecure_tls" json:"insecure_tls"`                   // 是否禁用证书检查
+	UseIPv6CountryCode          bool            `koanf:"use_ipv6_country_code" json:"use_ipv6_country_code"` // 默认优先展示IPv6旗帜
+	IPReportPeriod              uint32          `koanf:"ip_report_period" json:"ip_report_period"`           // IP上报周期
+	CustomIPApi                 []string        `koanf:"custom_ip_api" json:"custom_ip_api,omitempty"`       // 自定义 IP API                      // 重载间隔
 
 	k        *koanf.Koanf `json:"-"`
 	filePath string       `json:"-"`
@@ -128,8 +128,8 @@ func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
 type kubeyaml struct{}
 
 // Unmarshal parses the given YAML bytes.
-func (k *kubeyaml) Unmarshal(b []byte) (map[string]interface{}, error) {
-	var out map[string]interface{}
+func (k *kubeyaml) Unmarshal(b []byte) (map[string]any, error) {
+	var out map[string]any
 	if err := yaml.Unmarshal(b, &out); err != nil {
 		return nil, err
 	}
@@ -138,6 +138,6 @@ func (k *kubeyaml) Unmarshal(b []byte) (map[string]interface{}, error) {
 }
 
 // Marshal marshals the given config map to YAML bytes.
-func (k *kubeyaml) Marshal(o map[string]interface{}) ([]byte, error) {
+func (k *kubeyaml) Marshal(o map[string]any) ([]byte, error) {
 	return yaml.Marshal(o)
 }

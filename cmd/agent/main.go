@@ -305,7 +305,7 @@ func run() {
 }
 
 func runService(action string, path string) {
-	winConfig := map[string]interface{}{
+	winConfig := map[string]any{
 		"OnFailure": "restart",
 	}
 

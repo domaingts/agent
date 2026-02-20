@@ -40,8 +40,8 @@ func GetHost(ctx context.Context) (uint64, error) {
 		cmd := exec.Command("df")
 		out, err := cmd.CombinedOutput()
 		if err == nil {
-			s := strings.Split(string(out), "\n")
-			for _, c := range s {
+			s := strings.SplitSeq(string(out), "\n")
+			for c := range s {
 				info := strings.Fields(c)
 				if len(info) == 6 {
 					if info[5] == "/" {
@@ -76,8 +76,8 @@ func GetState(ctx context.Context) (uint64, error) {
 		cmd := exec.Command("df")
 		out, err := cmd.CombinedOutput()
 		if err == nil {
-			s := strings.Split(string(out), "\n")
-			for _, c := range s {
+			s := strings.SplitSeq(string(out), "\n")
+			for c := range s {
 				info := strings.Fields(c)
 				if len(info) == 6 {
 					if info[5] == "/" {
