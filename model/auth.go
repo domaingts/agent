@@ -7,6 +7,7 @@ import (
 type AuthHandler struct {
 	ClientSecret string
 	ClientUUID   string
+	TLS          bool
 }
 
 func (a *AuthHandler) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
@@ -14,5 +15,5 @@ func (a *AuthHandler) GetRequestMetadata(ctx context.Context, uri ...string) (ma
 }
 
 func (a *AuthHandler) RequireTransportSecurity() bool {
-	return false
+	return a.TLS
 }

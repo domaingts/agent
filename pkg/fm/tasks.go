@@ -44,7 +44,7 @@ func (t *Task) listDir() {
 	dir := string(t.remoteData.Data[1:])
 	var entries []fs.DirEntry
 	var err error
-	for {
+	for range 2 {
 		entries, err = os.ReadDir(dir)
 		if err != nil {
 			usr, err := user.Current()
@@ -56,6 +56,10 @@ func (t *Task) listDir() {
 			continue
 		}
 		break
+	}
+	if err != nil {
+		t.taskClient.Send(&pb.IOStreamData{Data: CreateErr(err)})
+		return
 	}
 	var buffer bytes.Buffer
 	td := Create(&buffer, dir)

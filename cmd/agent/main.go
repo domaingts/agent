@@ -37,7 +37,7 @@ var (
 	executablePath        string
 	defaultConfigPath     = loadDefaultConfigPath()
 	client                pb.NezhaServiceClient
-	initialized           bool
+	initialized           atomic.Bool
 	agentConfig           model.AgentConfig
 	prevDashboardBootTime uint64 // 面板上次启动时间
 	geoipReported         bool   // 在面板重启后是否上报成功过 GeoIP
@@ -87,13 +87,15 @@ func setEnv() {
 		}
 		var conn net.Conn
 		var err error
+		var tried int
 		for _, server := range util.RangeRnd(dnsServers) {
 			conn, err = d.DialContext(ctx, "udp", server)
 			if err == nil {
 				return conn, nil
 			}
+			tried++
 		}
-		return nil, err
+		return nil, fmt.Errorf("all %d DNS servers failed, last error: %v", tried, err)
 	}
 	headers := util.BrowserHeaders()
 	http.DefaultClient.Timeout = time.Second * 30
@@ -218,6 +220,7 @@ func run() {
 	auth := model.AuthHandler{
 		ClientSecret: agentConfig.ClientSecret,
 		ClientUUID:   agentConfig.UUID,
+		TLS:          agentConfig.TLS,
 	}
 
 	var err error
@@ -225,7 +228,7 @@ func run() {
 	var conn *grpc.ClientConn
 
 	retry := func() {
-		initialized = false
+		initialized.Store(false)
 		if conn != nil {
 			conn.Close()
 		}
@@ -265,7 +268,7 @@ func run() {
 
 		geoipReported = geoipReported && prevDashboardBootTime > 0 && dashboardBootTimeReceipt.GetData() == prevDashboardBootTime
 		prevDashboardBootTime = dashboardBootTimeReceipt.GetData()
-		initialized = true
+		initialized.Store(true)
 
 		wCtx, wCancel := context.WithCancel(context.Background())
 
@@ -427,7 +430,7 @@ func reportState(statClient pb.NezhaService_ReportSystemStateClient, host, ip ti
 	if statClient.Context().Err() != nil {
 		return host, ip, statClient.Context().Err()
 	}
-	if initialized {
+	if initialized.Load() {
 		monitor.TrackNetworkSpeed()
 		if _, err := doWithTimeout(func() (*pb.Receipt, error) {
 			return nil, statClient.Send(monitor.GetState(agentConfig.SkipConnectionCount, agentConfig.SkipProcsCount).PB())
@@ -460,7 +463,7 @@ func reportHost() bool {
 		return false
 	}
 	defer hostStatus.Store(false)
-	if client != nil && initialized {
+	if client != nil && initialized.Load() {
 		receipt, err := doWithTimeout(func() (*pb.Uint64Receipt, error) {
 			return client.ReportSystemInfo2(context.Background(), monitor.GetHost().PB())
 		}, time.Second*10)
@@ -479,7 +482,7 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 	}
 	defer ipStatus.Store(false)
 
-	if client == nil || !initialized {
+	if client == nil || !initialized.Load() {
 		return false
 	}
 
@@ -508,17 +511,20 @@ func reportGeoIP(use6, forceUpdate bool) bool {
 }
 
 func doWithTimeout[T any](fn func() (T, error), timeout time.Duration) (T, error) {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	var t T
-	var err error
-	go func() {
-		defer cancel()
-		t, err = fn()
-	}()
-	<-timeoutCtx.Done()
-	if timeoutCtx.Err() != context.Canceled {
-		return t, fmt.Errorf("context error: %v, fn err: %v", timeoutCtx.Err(), err)
+	type result struct {
+		val T
+		err error
 	}
-	return t, err
+	ch := make(chan result, 1)
+	go func() {
+		val, err := fn()
+		ch <- result{val, err}
+	}()
+	select {
+	case r := <-ch:
+		return r.val, r.err
+	case <-time.After(timeout):
+		var zero T
+		return zero, fmt.Errorf("timeout after %v", timeout)
+	}
 }

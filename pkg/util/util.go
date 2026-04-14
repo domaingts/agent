@@ -4,14 +4,15 @@ import (
 	"cmp"
 	"context"
 	"crypto/md5"
+	"crypto/rand"
 	"fmt"
 	"iter"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"slices"
 	"strings"
-	"time"
 )
 
 const MacOSChromeUA = "nezha-agent/1.0"
@@ -54,8 +55,12 @@ func RotateQueue1(start, i, size int) int {
 }
 
 func RangeRnd[S ~[]E, E any](s S) iter.Seq2[int, E] {
-	index := int(time.Now().Unix()) % len(s)
 	return func(yield func(int, E) bool) {
+		if len(s) == 0 {
+			return
+		}
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(s))))
+		index := int(n.Int64())
 		for i := range len(s) {
 			r := RotateQueue1(index, i, len(s))
 			if !yield(r, s[r]) {
