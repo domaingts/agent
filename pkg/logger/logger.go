@@ -3,25 +3,26 @@ package logger
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/nezhahq/service"
 )
 
 var (
-	defaultLogger = &ServiceLogger{enabled: true, logger: service.ConsoleLogger}
+	defaultLogger = NewServiceLogger(true, service.ConsoleLogger)
 
 	loggerOnce sync.Once
 )
 
 type ServiceLogger struct {
-	enabled bool
+	enabled atomic.Bool
 	logger  service.Logger
 }
 
 func InitDefaultLogger(enabled bool, logger service.Logger) {
 	loggerOnce.Do(func() {
-		defaultLogger.enabled = enabled
+		defaultLogger.enabled.Store(enabled)
 		defaultLogger.logger = logger
 	})
 }
@@ -30,55 +31,54 @@ func SetEnable(enable bool) {
 	defaultLogger.SetEnable(enable)
 }
 
-func Println(v ...any) {
+func Println(v ...interface{}) {
 	defaultLogger.Println(v...)
 }
 
-func Printf(format string, v ...any) {
+func Printf(format string, v ...interface{}) {
 	defaultLogger.Printf(format, v...)
 }
 
-func Error(v ...any) error {
+func Error(v ...interface{}) error {
 	return defaultLogger.Error(v...)
 }
 
-func Errorf(format string, v ...any) error {
+func Errorf(format string, v ...interface{}) error {
 	return defaultLogger.Errorf(format, v...)
 }
 
 func NewServiceLogger(enable bool, logger service.Logger) *ServiceLogger {
-	return &ServiceLogger{
-		enabled: enable,
-		logger:  logger,
-	}
+	serviceLogger := &ServiceLogger{logger: logger}
+	serviceLogger.enabled.Store(enable)
+	return serviceLogger
 }
 
 func (s *ServiceLogger) SetEnable(enable bool) {
-	s.enabled = enable
+	s.enabled.Store(enable)
 }
 
-func (s *ServiceLogger) Println(v ...any) {
-	if s.enabled {
+func (s *ServiceLogger) Println(v ...interface{}) {
+	if s.enabled.Load() {
 		s.logger.Infof("NEZHA@%s>> %v", time.Now().Format(time.DateTime), fmt.Sprint(v...))
 	}
 }
 
-func (s *ServiceLogger) Printf(format string, v ...any) {
-	if s.enabled {
-		s.logger.Infof("NEZHA@%s>> "+format, append([]any{time.Now().Format(time.DateTime)}, v...)...)
+func (s *ServiceLogger) Printf(format string, v ...interface{}) {
+	if s.enabled.Load() {
+		s.logger.Infof("NEZHA@%s>> "+format, append([]interface{}{time.Now().Format(time.DateTime)}, v...)...)
 	}
 }
 
-func (s *ServiceLogger) Error(v ...any) error {
-	if s.enabled {
+func (s *ServiceLogger) Error(v ...interface{}) error {
+	if s.enabled.Load() {
 		return s.logger.Errorf("NEZHA@%s>> %v", time.Now().Format(time.DateTime), fmt.Sprint(v...))
 	}
 	return nil
 }
 
-func (s *ServiceLogger) Errorf(format string, v ...any) error {
-	if s.enabled {
-		return s.logger.Errorf("NEZHA@%s>> "+format, append([]any{time.Now().Format(time.DateTime)}, v...)...)
+func (s *ServiceLogger) Errorf(format string, v ...interface{}) error {
+	if s.enabled.Load() {
+		return s.logger.Errorf("NEZHA@%s>> "+format, append([]interface{}{time.Now().Format(time.DateTime)}, v...)...)
 	}
 	return nil
 }

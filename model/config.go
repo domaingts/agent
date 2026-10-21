@@ -3,8 +3,11 @@ package model
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -26,18 +29,36 @@ type AgentConfig struct {
 	HardDrivePartitionAllowlist []string        `koanf:"hard_drive_partition_allowlist" json:"hard_drive_partition_allowlist,omitempty"`
 	NICAllowlist                map[string]bool `koanf:"nic_allowlist" json:"nic_allowlist,omitempty"`
 	DNS                         []string        `koanf:"dns" json:"dns,omitempty"`
-	Temperature                 bool            `koanf:"temperature" json:"temperature"`                     // 是否检查温度
-	SkipConnectionCount         bool            `koanf:"skip_connection_count" json:"skip_connection_count"` // 跳过连接数检查
-	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`           // 跳过进程数量检查
-	ReportDelay                 uint32          `koanf:"report_delay" json:"report_delay"`                   // 报告间隔
-	TLS                         bool            `koanf:"tls" json:"tls"`                                     // 是否使用TLS加密传输至服务端
-	InsecureTLS                 bool            `koanf:"insecure_tls" json:"insecure_tls"`                   // 是否禁用证书检查
-	UseIPv6CountryCode          bool            `koanf:"use_ipv6_country_code" json:"use_ipv6_country_code"` // 默认优先展示IPv6旗帜
-	IPReportPeriod              uint32          `koanf:"ip_report_period" json:"ip_report_period"`           // IP上报周期
-	CustomIPApi                 []string        `koanf:"custom_ip_api" json:"custom_ip_api,omitempty"`       // 自定义 IP API
+	GPU                         bool            `koanf:"gpu" json:"gpu"`                                         // 是否检查GPU
+	Temperature                 bool            `koanf:"temperature" json:"temperature"`                         // 是否检查温度
+	SkipConnectionCount         bool            `koanf:"skip_connection_count" json:"skip_connection_count"`     // 跳过连接数检查
+	SkipProcsCount              bool            `koanf:"skip_procs_count" json:"skip_procs_count"`               // 跳过进程数量检查
+	DisableAutoUpdate           bool            `koanf:"disable_auto_update" json:"disable_auto_update"`         // 关闭自动更新
+	DisableForceUpdate          bool            `koanf:"disable_force_update" json:"disable_force_update"`       // 关闭强制更新
+	DisableCommandExecute       bool            `koanf:"disable_command_execute" json:"disable_command_execute"` // 关闭命令执行
+	ReportDelay                 uint32          `koanf:"report_delay" json:"report_delay"`                       // 报告间隔
+	TLS                         bool            `koanf:"tls" json:"tls"`                                         // 是否使用TLS加密传输至服务端
+	InsecureTLS                 bool            `koanf:"insecure_tls" json:"insecure_tls"`                       // 是否禁用证书检查
+	UseIPv6CountryCode          bool            `koanf:"use_ipv6_country_code" json:"use_ipv6_country_code"`     // 默认优先展示IPv6旗帜
+	UseGiteeToUpgrade           bool            `koanf:"use_gitee_to_upgrade" json:"use_gitee_to_upgrade"`       // 强制从Gitee获取更新
+	UseAtomGitToUpgrade         bool            `koanf:"use_atomgit_to_upgrade" json:"use_atomgit_to_upgrade"`   // 强制从AtomGit获取更新
+	DisableNat                  bool            `koanf:"disable_nat" json:"disable_nat"`                         // 关闭内网穿透
+	DisableSendQuery            bool            `koanf:"disable_send_query" json:"disable_send_query"`           // 关闭发送TCP/ICMP/HTTP请求
+	IPReportPeriod              uint32          `koanf:"ip_report_period" json:"ip_report_period"`               // IP上报周期
+	SelfUpdatePeriod            uint32          `koanf:"self_update_period" json:"self_update_period"`           // 自动更新周期
+	CustomIPApi                 []string        `koanf:"custom_ip_api" json:"custom_ip_api,omitempty"`           // 自定义 IP API                      // 重载间隔
 
 	k        *koanf.Koanf `json:"-"`
 	filePath string       `json:"-"`
+}
+
+func (c AgentConfig) Clone() AgentConfig {
+	cloned := c
+	cloned.HardDrivePartitionAllowlist = slices.Clone(c.HardDrivePartitionAllowlist)
+	cloned.NICAllowlist = maps.Clone(c.NICAllowlist)
+	cloned.DNS = slices.Clone(c.DNS)
+	cloned.CustomIPApi = slices.Clone(c.CustomIPApi)
+	return cloned
 }
 
 // Read 从给定的文件目录加载配置文件
@@ -90,7 +111,15 @@ func (c *AgentConfig) Save() error {
 		return err
 	}
 
-	return os.WriteFile(c.filePath, data, 0600)
+	if err := os.WriteFile(c.filePath, data, 0600); err != nil {
+		return err
+	}
+	// os.WriteFile only applies the perm argument on CREATE; an existing
+	// 0644 file keeps its permissions even though we asked for 0600.
+	// Explicit Chmod tightens it so the new client_secret never sits in a
+	// world-readable file (a same-host attacker could otherwise read it
+	// and impersonate the agent against the dashboard).
+	return os.Chmod(c.filePath, 0600)
 }
 
 func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
@@ -106,6 +135,13 @@ func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
 
 	if c.ReportDelay < 1 || c.ReportDelay > 4 {
 		return errors.New("report-delay ranges from 1-4")
+	}
+
+	for _, apiURL := range c.CustomIPApi {
+		parsed, err := url.Parse(apiURL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return fmt.Errorf("custom_ip_api entry %q must use http or https scheme", apiURL)
+		}
 	}
 
 	if !isRemoteEdit {
@@ -128,8 +164,8 @@ func ValidateConfig(c *AgentConfig, isRemoteEdit bool) error {
 type kubeyaml struct{}
 
 // Unmarshal parses the given YAML bytes.
-func (k *kubeyaml) Unmarshal(b []byte) (map[string]any, error) {
-	var out map[string]any
+func (k *kubeyaml) Unmarshal(b []byte) (map[string]interface{}, error) {
+	var out map[string]interface{}
 	if err := yaml.Unmarshal(b, &out); err != nil {
 		return nil, err
 	}
@@ -138,6 +174,6 @@ func (k *kubeyaml) Unmarshal(b []byte) (map[string]any, error) {
 }
 
 // Marshal marshals the given config map to YAML bytes.
-func (k *kubeyaml) Marshal(o map[string]any) ([]byte, error) {
+func (k *kubeyaml) Marshal(o map[string]interface{}) ([]byte, error) {
 	return yaml.Marshal(o)
 }
